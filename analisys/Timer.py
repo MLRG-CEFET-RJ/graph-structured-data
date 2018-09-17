@@ -1,6 +1,7 @@
 import time
 import timeit
 
+
 class Timer:
     
     def __init__():
