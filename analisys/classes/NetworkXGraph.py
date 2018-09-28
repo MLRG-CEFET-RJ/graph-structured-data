@@ -12,12 +12,13 @@ class Graph:
         # basic attributes
         self._lines = []
         self._graph = None
+        self._is_connected = False
 
-        # dict of means of graph
+        # dict of means of self._graph
         self._means = dict()
         
         # graphs used for analisys
-        self._sample_graph, self._sub_graph = nx.Graph(), nx.Graph()
+        self._sample_edge_graph, self._sample_node_graph = nx.Graph(), nx.Graph()
         
         # dict of measures get from analisys
         self._measures = dict()
@@ -36,15 +37,23 @@ class Graph:
 
         self._read_lines_tsv(tsv_file_path)
         self._graph = nx.parse_edgelist(self._lines, nodetype = int, data=(('ajd_value',float),))
+        self._is_connected = nx.is_connected(self._graph)
         self._means['num_triangles'] = int(sum(list(nx.triangles(self._graph).values()))/3)
         self._means['clustering_coefficient'] = nx.average_clustering(self._graph)
-        self._means['diameter'] = nx.diameter(self._graph)
-        
+        if(self._is_connected):
+            self._means['diameter'] = nx.diameter(self._graph)
+            self._means['radius'] = nx.radius(self._graph)
+        else:
+            self._means['diameter'] = self._get_diameter_from_not_connected(self._graph)
+            self._means['radius'] = self._get_radius_from_not_connected(self._graph)
+
+        print(('Number of lines read from TSV file: %s') % len(self._lines))
         print(nx.info(self._graph))
-        print(('Number of lines: %s') % len(self._lines))
         print('Number of triangles: ', self._means['num_triangles'])
         print('Clustering coefficient: ', self._means['clustering_coefficient'])
         print('Diameter: ', self._means['diameter'])
+        print('Radius: ', self._means['radius'])
+        
         Timer.finish()
         
         
@@ -67,60 +76,106 @@ class Graph:
         
     def get_analisys_from_samples(self, measure_list):
         
+        print('----------------------------------------')
+        print('Analysing by random edge sample strategy')
+        print('----------------------------------------')
+        
+        # Calculating length of step
         step = int(len(self._lines)/25)
         if step < 1:
             step = 1
 
-        # Building through edge and node strategies
+        # Building and analysing
         for i in range(step, len(self._lines)+1, step):
             Timer.start()
-
             # getting edges from list with random choice
             sample_edge_list = np.random.choice(self._lines, i, replace=False)
             # creating a sample graph from sample_edge_list
-            self._sample_graph = nx.parse_edgelist(sample_edge_list, nodetype = int, data=(('ajd_value',float),))
-            # creating a subgraph of self._graph using nodes of the self._sample_graph
-            self._sub_graph = self._graph.subgraph(self._sample_graph.nodes).copy()
-            
+            self._sample_edge_graph = nx.parse_edgelist(sample_edge_list, nodetype = int, data=(('ajd_value',float),))
+            # calculating measures
             for measure in measure_list:
-                self._calculate_measure(measure)
-
+                self._calculate_measure(measure, 'edge_list', self._sample_edge_graph)
+            # finishing
             elapsed = Timer.get_elapsed()
-            print('Elapsed time for %d lines : %f, total nodes processed: %d' % 
-                     (i, elapsed, self._sample_graph.number_of_nodes()))
+            print('Elapsed time for %d edges: %f, total nodes processed: %d' % 
+                     (i, elapsed, self._sample_edge_graph.number_of_nodes()))
             
-        self._sample_graph.clear()
-        self._sub_graph.clear()
+        # emptying memory
+        sample_edge_list = None
+        self._sample_edge_graph.clear()
+        
+        
+        print('----------------------------------------')
+        print('Analysing by random node sample strategy')
+        print('----------------------------------------')
+            
+        # Calculating length of step
+        nn = self._graph.number_of_nodes()
+        step = int(nn/25)
+        if step < 1:
+            step = 1
+
+        # Building and analysing
+        for i in range(step, nn+1, step):
+            Timer.start()
+            # getting nodes from self._graph with random choice
+            sample_node_list = np.random.choice(self._graph.nodes, i, replace=False)
+            # creating a sample graph from sample_node_list
+            self._sample_node_graph = self._graph.subgraph(sample_node_list).copy()
+            # calculating measures
+            for measure in measure_list:
+                self._calculate_measure(measure, 'node_list', self._sample_node_graph)
+            # finishing
+            elapsed = Timer.get_elapsed()
+            print('Elapsed time for %d nodes: %f, total nodes processed: %d' % 
+                     (i, elapsed, self._sample_node_graph.number_of_nodes()))
+        
+        # emptying memory
+        sample_node_list = None
+        self._sample_node_graph.clear()
+        
         print()
         print('Analisys from samples finished. Call plot_analsys() to view results')
         
         
         
-    def _calculate_measure(self, measure):
+    def _calculate_measure(self, measure, strategy, graph):
         if measure not in self._measures:
             self._measures[measure] = {'title': measure}
-            self._measures[measure]['m'] = []
-            self._measures[measure]['edge_list'] = []
-            self._measures[measure]['node_list'] = []
+            self._measures[measure]['edge_list'] = {'m': [], 'data': []}
+            self._measures[measure]['node_list'] = {'m': [], 'data': []}
                 
-        self._measures[measure]['m'].append(self._sample_graph.number_of_nodes())
+        self._measures[measure][strategy]['m'].append(graph.number_of_nodes())
         
         if measure == 'clustering_coefficient':
-            self._measures[measure]['edge_list'].append(nx.average_clustering(self._sample_graph))
-            self._measures[measure]['node_list'].append(nx.average_clustering(self._sub_graph))
+            self._measures[measure][strategy]['data'].append(nx.average_clustering(graph))
+        
         elif measure == 'diameter':
-            self._measures[measure]['edge_list'].append(nx.diameter(self._sample_graph))
-            self._measures[measure]['node_list'].append(nx.diameter(self._sub_graph))
+            if nx.is_connected(graph):
+                self._measures[measure][strategy]['data'].append(nx.diameter(graph))
+            else:
+                self._measures[measure][strategy]['data'].append(self._get_diameter_from_not_connected(graph))
+                
+        elif measure == 'radius':
+            if nx.is_connected(graph):
+                self._measures[measure][strategy]['data'].append(nx.radius(graph))
+            else:
+                self._measures[measure][strategy]['data'].append(self._get_radius_from_not_connected(graph))
+                
 
-            
             
     def plot_analisys(self, measure_list):
         
         for measure in measure_list:
         
-            plt.plot(self._measures[measure]['m'], [self._means[measure]]*len(self._measures[measure]['m']), label='Total Graph')
-            plt.plot(self._measures[measure]['m'], self._measures[measure]['edge_list'], label='edge list')
-            plt.plot(self._measures[measure]['m'], self._measures[measure]['node_list'], label='node list')
+            # Config of axis
+            # v = [xmin, xmax, ymin, ymax]
+            # v = [0, 11, 0, 5]
+            # plt.axis(v)
+            
+            plt.plot(np.arange(1, self._graph.number_of_nodes() + 1), [self._means[measure]]*self._graph.number_of_nodes(), label='Total Graph')
+            plt.plot(self._measures[measure]['edge_list']['m'], self._measures[measure]['edge_list']['data'], label='edge list')
+            plt.plot(self._measures[measure]['node_list']['m'], self._measures[measure]['node_list']['data'], label='node list')
             plt.legend()
             str_title = 'Comparison of %s between strategies' % self._measures[measure]['title']
             plt.title(str_title)
@@ -128,5 +183,25 @@ class Graph:
             plt.ylabel(self._measures[measure]['title'])
             plt.show()
         
+        
+        
+    def _get_diameter_from_not_connected(self, g):
+        max_diameter = 0
 
+        for c in nx.connected_components(g):
+            sg = g.subgraph(c).copy()
+            max_diameter = max(max_diameter, nx.diameter(sg))
+            
+        sg.clear()
+            
+        
+        
+    def _get_radius_from_not_connected(self, g):
+        max_radius = 0
+
+        for c in nx.connected_components(g):
+            sg = g.subgraph(c).copy()
+            max_radius = max(max_radius, nx.radius(sg))
+
+        sg.clear()
         
