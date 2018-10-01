@@ -17,8 +17,8 @@ class Graph:
         # dict of means of self._graph
         self._means = dict()
         
-        # graphs used for analisys
-        self._sample_edge_graph, self._sample_node_graph = nx.Graph(), nx.Graph()
+        # sample graph used for analisys
+        self._sample_graph = nx.Graph()
         
         # dict of measures get from analisys
         self._measures = dict()
@@ -91,18 +91,18 @@ class Graph:
             # getting edges from list with random choice
             sample_edge_list = np.random.choice(self._lines, i, replace=False)
             # creating a sample graph from sample_edge_list
-            self._sample_edge_graph = nx.parse_edgelist(sample_edge_list, nodetype = int, data=(('ajd_value',float),))
+            self._sample_graph = nx.parse_edgelist(sample_edge_list, nodetype = int, data=(('ajd_value',float),))
             # calculating measures
             for measure in measure_list:
-                self._calculate_measure(measure, 'edge_list', self._sample_edge_graph)
+                self._calculate_measure(measure, 'edge_list', self._sample_graph)
             # finishing
             elapsed = Timer.get_elapsed()
             print('Elapsed time for %d edges: %f, total nodes processed: %d' % 
-                     (i, elapsed, self._sample_edge_graph.number_of_nodes()))
+                     (i, elapsed, self._sample_graph.number_of_nodes()))
             
         # emptying memory
         sample_edge_list = None
-        self._sample_edge_graph.clear()
+        self._sample_graph.clear()
         
         
         print('----------------------------------------')
@@ -121,19 +121,66 @@ class Graph:
             # getting nodes from self._graph with random choice
             sample_node_list = np.random.choice(self._graph.nodes, i, replace=False)
             # creating a sample graph from sample_node_list
-            self._sample_node_graph = self._graph.subgraph(sample_node_list).copy()
+            self._sample_graph = self._graph.subgraph(sample_node_list).copy()
             # calculating measures
             for measure in measure_list:
-                self._calculate_measure(measure, 'node_list', self._sample_node_graph)
+                self._calculate_measure(measure, 'node_list', self._sample_graph)
             # finishing
             elapsed = Timer.get_elapsed()
             print('Elapsed time for %d nodes: %f, total nodes processed: %d' % 
-                     (i, elapsed, self._sample_node_graph.number_of_nodes()))
+                     (i, elapsed, self._sample_graph.number_of_nodes()))
         
         # emptying memory
         sample_node_list = None
-        self._sample_node_graph.clear()
+        self._sample_graph.clear()
         
+        
+        print('----------------------------------------')
+        print('Analysing by random walk sample strategy')
+        print('----------------------------------------')
+        
+        # initializing
+        visited = set()
+        
+        # To control the point of plotting
+        j = 0
+        checkpoint = int(self._graph.number_of_nodes()/25)
+        if checkpoint < 1:
+            checkpoint = 1
+
+        # Let's walk k steps
+        k = self._graph.number_of_nodes() * 6
+
+        # starting random
+        idNode = np.random.choice(self._graph.nodes, 1)[0]
+        visited.add(idNode)
+        
+        # Building and analysing
+        for i in range(k):
+            Timer.start()
+            # getting nodes from self._graph with random walk
+            neighbors = [n for n in self._graph.neighbors(idNode)]
+            idNode = np.random.choice(neighbors, 1)[0]
+            visited.add(idNode)
+            j = j + 1
+            if(j == checkpoint):
+                j = 0
+                # creating a sample graph from visited_list
+                self._sample_graph = self._graph.subgraph(visited).copy()
+                # calculating measures
+                for measure in measure_list:
+                    self._calculate_measure(measure, 'walk_list', self._sample_graph)
+                # finishing
+                elapsed = Timer.get_elapsed()
+                print('Elapsed time for %d steps: %f, total nodes processed: %d' % 
+                         (i+1, elapsed, self._sample_graph.number_of_nodes()))
+        
+        # emptying memory
+        visited = None
+        self._sample_graph.clear()
+        
+        
+        # finishing the analysis
         print()
         print('Analisys from samples finished. Call plot_analsys() to view results')
         
@@ -144,6 +191,7 @@ class Graph:
             self._measures[measure] = {'title': measure}
             self._measures[measure]['edge_list'] = {'m': [], 'data': []}
             self._measures[measure]['node_list'] = {'m': [], 'data': []}
+            self._measures[measure]['walk_list'] = {'m': [], 'data': []}
                 
         self._measures[measure][strategy]['m'].append(graph.number_of_nodes())
         
@@ -176,6 +224,7 @@ class Graph:
             plt.plot(np.arange(1, self._graph.number_of_nodes() + 1), [self._means[measure]]*self._graph.number_of_nodes(), label='Total Graph')
             plt.plot(self._measures[measure]['edge_list']['m'], self._measures[measure]['edge_list']['data'], label='edge list')
             plt.plot(self._measures[measure]['node_list']['m'], self._measures[measure]['node_list']['data'], label='node list')
+            plt.plot(self._measures[measure]['walk_list']['m'], self._measures[measure]['walk_list']['data'], label='random walk')
             plt.legend()
             str_title = 'Comparison of %s between strategies' % self._measures[measure]['title']
             plt.title(str_title)
