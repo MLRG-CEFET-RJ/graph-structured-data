@@ -10,7 +10,7 @@ class Graph:
     
     def __init__(self):
         # basic attributes
-        self._lines = []
+        self._lines = list()
         self._graph = None
         self._is_connected = False
 
@@ -23,9 +23,12 @@ class Graph:
         # dict of measures get from analisys
         self._measures = dict()
         
+        # list of subgraphs of self._graph
+        self._subgraphs = list()
         
         
-    def build_from_tsv(self, tsv_file_path):
+        
+    def build_from_tsv(self, tsv_file_path, data=None, show_info=False):
         """Build a graph
         
            Builds the graph and stores it in self._graph
@@ -36,23 +39,27 @@ class Graph:
         Timer.start()
 
         self._read_lines_tsv(tsv_file_path)
-        self._graph = nx.parse_edgelist(self._lines, nodetype = int, data=(('ajd_value',float),))
+        #self._graph = nx.parse_edgelist(self._lines, nodetype = int, data=(('ajd_value',float),))
+        self._graph = nx.parse_edgelist(self._lines, nodetype = int, data=data)
         self._is_connected = nx.is_connected(self._graph)
-        self._means['num_triangles'] = int(sum(list(nx.triangles(self._graph).values()))/3)
-        self._means['clustering_coefficient'] = nx.average_clustering(self._graph)
-        if(self._is_connected):
-            self._means['diameter'] = nx.diameter(self._graph)
-            self._means['radius'] = nx.radius(self._graph)
-        else:
-            self._means['diameter'] = self._get_diameter_from_not_connected(self._graph)
-            self._means['radius'] = self._get_radius_from_not_connected(self._graph)
+        
+        if show_info:
+            self._means['num_triangles'] = int(sum(list(nx.triangles(self._graph).values()))/3)
+            self._means['clustering_coefficient'] = nx.average_clustering(self._graph)
+            if(self._is_connected):
+                self._means['diameter'] = nx.diameter(self._graph)
+                self._means['radius'] = nx.radius(self._graph)
+            else:
+                self._means['diameter'] = self._get_diameter_from_disconnected(self._graph)
+                self._means['radius'] = self._get_radius_from_disconnected(self._graph)
 
-        print(('Number of lines read from TSV file: %s') % len(self._lines))
-        print(nx.info(self._graph))
-        print('Number of triangles: ', self._means['num_triangles'])
-        print('Clustering coefficient: ', self._means['clustering_coefficient'])
-        print('Diameter: ', self._means['diameter'])
-        print('Radius: ', self._means['radius'])
+            print(('Number of lines read from TSV file: %s') % len(self._lines))
+            print(nx.info(self._graph))
+            print('Number of triangles: ', self._means['num_triangles'])
+            print('Clustering coefficient: ', self._means['clustering_coefficient'])
+            print('Connected: ', '%s' % 'Yes' if self._is_connected else 'No')
+            print('Diameter: ', self._means['diameter'])
+            print('Radius: ', self._means['radius'])
         
         Timer.finish()
         
@@ -202,13 +209,13 @@ class Graph:
             if nx.is_connected(graph):
                 self._measures[measure][strategy]['data'].append(nx.diameter(graph))
             else:
-                self._measures[measure][strategy]['data'].append(self._get_diameter_from_not_connected(graph))
+                self._measures[measure][strategy]['data'].append(self._get_diameter_from_disconnected(graph))
                 
         elif measure == 'radius':
             if nx.is_connected(graph):
                 self._measures[measure][strategy]['data'].append(nx.radius(graph))
             else:
-                self._measures[measure][strategy]['data'].append(self._get_radius_from_not_connected(graph))
+                self._measures[measure][strategy]['data'].append(self._get_radius_from_disconnected(graph))
                 
 
             
@@ -231,10 +238,10 @@ class Graph:
             plt.xlabel('Number of nodes')
             plt.ylabel(self._measures[measure]['title'])
             plt.show()
+
+            
         
-        
-        
-    def _get_diameter_from_not_connected(self, g):
+    def _get_diameter_from_disconnected(self, g):
         max_diameter = 0
 
         for c in nx.connected_components(g):
@@ -242,10 +249,11 @@ class Graph:
             max_diameter = max(max_diameter, nx.diameter(sg))
             
         sg.clear()
+        return max_diameter
             
         
         
-    def _get_radius_from_not_connected(self, g):
+    def _get_radius_from_disconnected(self, g):
         max_radius = 0
 
         for c in nx.connected_components(g):
@@ -253,4 +261,84 @@ class Graph:
             max_radius = max(max_radius, nx.radius(sg))
 
         sg.clear()
+        return max_radius
+    
+    
+    
+    def get_degree(self):
+        degree = dict()
+        degree.update(nx.degree(self._graph))
+        return degree
+    
+    
+    
+    def transform_subgraph_list(self, delete_original = False):
+        if self._is_connected:
+            raise Exception('Transformation not executed. Graph is connected.')
+            
+        for c in nx.connected_components(self._graph):
+            self._subgraphs.append(self._graph.subgraph(c).copy())
+            
+        if delete_original:
+            self._graph.clear()
+            print('Original graph deleted.')
+            
+        print('%d subgraphs created.' % len(self._subgraphs))
+    
+    
+    
+    def get_eccentricity(self):
         
+        ecc = dict()
+                    
+        if self._is_connected:
+            ecc.update(nx.eccentricity(self._graph))
+        
+        else:
+            if not self._subgraphs:
+                for c in nx.connected_components(self._graph):
+                    sg = self._graph.subgraph(c).copy()
+                    ecc.update(nx.eccentricity(sg))
+            else:
+                for sg in self._subgraphs:
+                    ecc.update(nx.eccentricity(sg))
+        
+        return ecc
+    
+    
+    
+    def get_position(self):
+        
+        pos = dict()
+        
+        if self._is_connected:
+            pos.update(self._get_list_pos(self._graph))
+        
+        else:
+            if not self._subgraphs:
+                for c in nx.connected_components(self._graph):
+                    sg = self._graph.subgraph(c).copy()
+                    pos.update(self._get_list_pos(sg))
+            else:
+                for sg in self._subgraphs:
+                    pos.update(self._get_list_pos(sg))
+                
+        return pos
+    
+    
+    
+    def _get_list_pos(self, graph):
+        
+        temp_pos = dict()
+        
+        center = nx.center(graph)
+        for node in center:
+            temp_pos[node] = 1
+
+        periphery = nx.periphery(graph)
+        for node in periphery:
+            temp_pos[node] = 2
+            
+        return temp_pos
+
+    
