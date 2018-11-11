@@ -1,0 +1,32 @@
+	
+	-- INSTALAÇÃO TESTADA EM COMPUTADOR COM SISTEMA OPERACIONAL UBUNTU 16.04
+	-- PRÉ-REQUISITO: docker instalado
+
+	-- URL DO CONTAINER: https://hub.docker.com/r/continuumio/anaconda/
+
+	-- baixar o container
+		# docker pull continuumio/anaconda
+
+	-------------------------  EXECUTAR NO JUPYTER NOTEBOOK  -------------------------
+	-- executar o container pela primeira vez (via terminal do HOST) 
+	-- Ao término, copiar a URL com o token e abrir no browser
+	-- Substituir /path/to/folder/ pelo caminho em seu computodar
+		# docker run -it -p 8888:8888 -v /path/to/folder/GraphSAGE-simple-master-PyTorch:/home/GraphSAGE-simple-master-PyTorch/ --name graphsage-pytorch-jupyter continuumio/anaconda /bin/bash -c "/opt/conda/bin/conda install pytorch-cpu torchvision-cpu -c pytorch && /opt/conda/bin/conda install jupyter -y --quiet && /opt/conda/bin/jupyter notebook --notebook-dir=/home --ip='*' --port=8888 --no-browser --allow-root"
+
+	-- parar o container
+		# docker stop graphsage-pytorch-jupyter
+
+	-- executar o container nas próximas vezes
+		# docker start graphsage-pytorch-jupyter
+		# docker exec graphsage-pytorch-jupyter /opt/conda/bin/jupyter notebook --notebook-dir=/home --ip='*' --port=8888 --no-browser --allow-root
+
+	-------------------------  OUTRAS INFORMAÇÕES  -------------------------
+	-- descompactar arquivo .zip no jupyter-notebook (via NOTEBOOK JUPYTER)
+		import zipfile as zf
+		files = zf.ZipFile("GraphSAGE-simple-master-PyTorch.zip", 'r')
+		files.extractall()
+		files.close()
+
+	-- executar o treinamento (via NOTEBOOK JUPYTER)
+		from graphsage import model
+		model.run_cora()
