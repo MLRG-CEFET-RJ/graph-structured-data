@@ -229,28 +229,29 @@ def run_cora():
     
     return train_loss, score
 
-def _processes_set(klabels):
+def _processes_set(klabels, num_clusters, num_examples):
     
     #### separa os indices por cluster
     klabels_map = dict()
-    for i in range(7):
+    for i in range(num_clusters):
         klabels_map[i] = list()
     for i, label in enumerate(klabels):
         klabels_map[label].append(i)
     
     
     #### embaralha os indices
-    for i in range(7):
+    for i in range(num_clusters):
         random.shuffle(klabels_map[i])
     
     
     #### separa os conjuntos
     # calcula a razao
-    ratio = np.array([len(klabels_map[key]) / float(2708) for key in klabels_map])
+    ratio = np.array([len(klabels_map[key]) / float(num_examples) for key in klabels_map])
 
     # calcula quantidade proporcional dos conjuntos: treino(0), val(1), teste(2)
-    quantity = np.empty((7,3), dtype=int)
-    quantity[:,0] = ratio * 1208
+    quantity = np.empty((num_clusters,3), dtype=int)
+    #quantity[:,0] = ratio * 1208
+    quantity[:,0] = ratio * (len(klabels) - 1500)
     quantity[:,1] = ratio * 500
     quantity[:,2] = ratio * 1000
     
@@ -259,7 +260,7 @@ def _processes_set(klabels):
     test = list()
     train = dict()
     
-    for i in range(7):
+    for i in range(num_clusters):
         train[i] = list()
 
     for key in klabels_map:
@@ -306,6 +307,45 @@ def run_pubmed():
     random.seed(1)
     num_nodes = 19717
     feat_data, labels, adj_lists = load_pubmed()
+    
+    ######################################################################################################################
+    # TESTAR AS DUAS FORMAS: INCLUIR NA MATRIZ DE FEATURES AS INFORMACOES
+    #                        (talvez isso nao seja necessario ja que o graphsage faz os embeddings por agregacao)
+    #                                                    OU
+    #                        APENAS USAR O RESULTADO DO K-MEANS PARA SEPARAR OS LOTES
+    ######################################################################################################################
+
+    # normalization
+    scaler = preprocessing.StandardScaler().fit(feat_data)
+    feat_data = scaler.transform(feat_data)
+    
+    # Metodo Elbow para encontrar o numero de classes
+    if False:
+        wcss = [] # Within Cluster Sum of Squares
+        for i in range(2, 11):
+            kmeans = KMeans(n_clusters = i, init = 'random')
+            kmeans.fit(feat_data)
+            print i,kmeans.inertia_
+            wcss.append(kmeans.inertia_)  
+        plt.plot(range(2, 11), wcss)
+        plt.title('O Metodo Elbow')
+        plt.xlabel('Numero de Clusters')
+        plt.ylabel('WCSS')
+        plt.show()
+        return None, None
+        
+    
+    # Metodo Elbow encontrou 5 classes
+    kmeans = KMeans(n_clusters = 5, init = 'random')
+    kmeans.fit(feat_data)
+    kmeans.fit_transform(feat_data)
+    klabels = kmeans.labels_
+    if False:
+        return labels, klabels
+    
+    ######################################################################################################################
+    ######################################################################################################################
+    
     features = nn.Embedding(19717, 500)
     features.weight = nn.Parameter(torch.FloatTensor(feat_data), requires_grad=False)
    # features.cuda()
@@ -321,15 +361,47 @@ def run_pubmed():
     graphsage = SupervisedGraphSage(3, enc2)
 #    graphsage.cuda()
     rand_indices = np.random.permutation(num_nodes)
-    test = rand_indices[:1000]
-    val = rand_indices[1000:1500]
-    train = list(rand_indices[1500:])
+    
+    ###################################################################################################################
+    # AQUI EU ATRIBUO INDICES AOS CONJUNTOS USANDO AS QUANTIDADES PROPORCIONAIS DE CADA K-MEANS CLUSTER
+    ###################################################################################################################
+    #test = rand_indices[:1000]
+    #val = rand_indices[1000:1500]
+    #train = list(rand_indices[1500:])
+    
+    train, val, test, ratio = _processes_set(klabels, num_clusters = 5, num_examples = num_nodes)
+    ###################################################################################################################
+    ###################################################################################################################
 
     optimizer = torch.optim.SGD(filter(lambda p : p.requires_grad, graphsage.parameters()), lr=0.7)
     times = []
+    
+    ###################################################################################################################
+    # quantidade proporcional do batch, inicializacao do vetor de erro
+    ###################################################################################################################
+    quantity = np.empty((5,1), dtype=int)
+    quantity[:,0] = ratio * 1024
+    quantity = list(quantity.flatten())
+    
+    train_loss = list()
+    ###################################################################################################################
+    ###################################################################################################################
+    
     for batch in range(200):
-        batch_nodes = train[:1024]
-        random.shuffle(train)
+        ##################################################################################################
+        # O QUE EU POSSO FAZER AQUI EH EMBARALHAR OS VERTICES SEPARADAMENTE DENTRO DOS CLUSTERS
+        # PARA MONTAR BATCH_NODES, PEGAR AS QUANTIDADES PROPORCIONAIS 
+        ##################################################################################################
+        batch_nodes = list()
+        for key in train:
+            batch_nodes.extend(train[key][:quantity[key]])
+            random.shuffle(train[key])
+        random.shuffle(batch_nodes)
+        ##################################################################################################
+        ##################################################################################################
+
+        #batch_nodes = train[:1024]
+        #random.shuffle(train)
         start_time = time.time()
         optimizer.zero_grad()
         loss = graphsage.loss(batch_nodes, 
@@ -338,11 +410,16 @@ def run_pubmed():
         optimizer.step()
         end_time = time.time()
         times.append(end_time-start_time)
+        ##################################################################################################
+        train_loss.append(loss.data[0])    # armazena o erro
         print batch, loss.data[0]
-
+        
     val_output = graphsage.forward(val) 
-    print "Validation F1:", f1_score(labels[val], val_output.data.numpy().argmax(axis=1), average="micro")
+    score = f1_score(labels[val], val_output.data.numpy().argmax(axis=1), average="micro")
+    print "Validation F1:", score
     print "Average batch time:", np.mean(times)
+    
+    return train_loss, score
 
     
 if __name__ == "__main__":

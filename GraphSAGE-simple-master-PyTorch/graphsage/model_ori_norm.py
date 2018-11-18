@@ -12,6 +12,8 @@ from collections import defaultdict
 from graphsage.encoders import Encoder
 from graphsage.aggregators import MeanAggregator
 
+from sklearn import preprocessing
+
 """
 Simple supervised GraphSAGE model as well as examples running the model
 on the Cora and Pubmed datasets.
@@ -72,6 +74,15 @@ def run_cora():
     random.seed(1)
     num_nodes = 2708
     feat_data, labels, adj_lists = load_cora()
+    
+    ################################################################################################################
+    # normalization
+    ################################################################################################################
+    scaler = preprocessing.StandardScaler().fit(feat_data)
+    feat_data = scaler.transform(feat_data)
+    ################################################################################################################
+    ################################################################################################################
+    
     features = nn.Embedding(2708, 1433)
     features.weight = nn.Parameter(torch.FloatTensor(feat_data), requires_grad=False)
    # features.cuda()
@@ -162,6 +173,15 @@ def run_pubmed():
     random.seed(1)
     num_nodes = 19717
     feat_data, labels, adj_lists = load_pubmed()
+        
+    ################################################################################################################
+    # normalization
+    ################################################################################################################
+    scaler = preprocessing.StandardScaler().fit(feat_data)
+    feat_data = scaler.transform(feat_data)
+    ################################################################################################################
+    ################################################################################################################
+
     features = nn.Embedding(19717, 500)
     features.weight = nn.Parameter(torch.FloatTensor(feat_data), requires_grad=False)
    # features.cuda()
