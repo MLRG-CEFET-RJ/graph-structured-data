@@ -12,6 +12,8 @@ from collections import defaultdict
 from graphsage.encoders import Encoder
 from graphsage.aggregators import MeanAggregator
 
+import timeit
+
 """
 Simple supervised GraphSAGE model as well as examples running the model
 on the Cora and Pubmed datasets.
@@ -68,6 +70,9 @@ def load_cora():
     return feat_data, labels, adj_lists
 
 def run_cora():
+    
+    begin = timeit.default_timer()
+    
     np.random.seed(1)
     random.seed(1)
     num_nodes = 2708
@@ -121,12 +126,15 @@ def run_cora():
         train_loss.append(loss.data[0])    # armazena o erro
         print batch, loss.data[0]
 
+    end = timeit.default_timer()
+    elapsed = end - begin
+        
     val_output = graphsage.forward(val)
     score = f1_score(labels[val], val_output.data.numpy().argmax(axis=1), average="micro")
     print "Validation F1:", score
     print "Average batch time:", np.mean(times)
     
-    return train_loss, score
+    return train_loss, score, elapsed
 
 def load_pubmed():
     #hardcoded for simplicity...

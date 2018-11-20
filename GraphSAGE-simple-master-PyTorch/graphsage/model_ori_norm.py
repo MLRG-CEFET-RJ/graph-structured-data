@@ -14,6 +14,8 @@ from graphsage.aggregators import MeanAggregator
 
 from sklearn import preprocessing
 
+import timeit
+
 """
 Simple supervised GraphSAGE model as well as examples running the model
 on the Cora and Pubmed datasets.
@@ -67,18 +69,29 @@ def load_cora():
             paper2 = node_map[info[1]]
             adj_lists[paper1].add(paper2)
             adj_lists[paper2].add(paper1)
+            
     return feat_data, labels, adj_lists
 
 def run_cora():
+    
+    begin = timeit.default_timer()
+    
     np.random.seed(1)
     random.seed(1)
     num_nodes = 2708
     feat_data, labels, adj_lists = load_cora()
     
     ################################################################################################################
+    # sets definition earlier
+    rand_indices = np.random.permutation(num_nodes) # len(rand_indices) = 2708
+    test = rand_indices[:1000]        # 1000 examples
+    val = rand_indices[1000:1500]     # 1500 examples
+    train = list(rand_indices[1500:]) # 1208 examples
+    
+    ################################################################################################################
     # normalization
     ################################################################################################################
-    scaler = preprocessing.StandardScaler().fit(feat_data)
+    scaler = preprocessing.StandardScaler().fit(feat_data[train]) # only fit in the train examples
     feat_data = scaler.transform(feat_data)
     ################################################################################################################
     ################################################################################################################
@@ -104,13 +117,7 @@ def run_cora():
 
     graphsage = SupervisedGraphSage(7, enc2)
 #    graphsage.cuda()
-    rand_indices = np.random.permutation(num_nodes) # len(rand_indices) = 2708
-    test = rand_indices[:1000]        # 1000 exemplos
-    val = rand_indices[1000:1500]     # 1500 exemplos
-    train = list(rand_indices[1500:]) # 1208 exemplos
-
-    # De onde saiu graphsage.parameters() ????
-    # A classe chama super() . Onde estah super() ????
+    
     optimizer = torch.optim.SGD(filter(lambda p : p.requires_grad, graphsage.parameters()), lr=0.7)
     times = []
     
@@ -132,12 +139,16 @@ def run_cora():
         train_loss.append(loss.data[0])    # armazena o erro
         print batch, loss.data[0]
 
+    
+    end = timeit.default_timer()
+    elapsed = end - begin
+        
     val_output = graphsage.forward(val)
     score = f1_score(labels[val], val_output.data.numpy().argmax(axis=1), average="micro")
     print "Validation F1:", score
     print "Average batch time:", np.mean(times)
     
-    return train_loss, score
+    return train_loss, score, elapsed
 
 def load_pubmed():
     #hardcoded for simplicity...
@@ -175,9 +186,16 @@ def run_pubmed():
     feat_data, labels, adj_lists = load_pubmed()
         
     ################################################################################################################
+    # sets definition earlier
+    rand_indices = np.random.permutation(num_nodes)
+    test = rand_indices[:1000]
+    val = rand_indices[1000:1500]
+    train = list(rand_indices[1500:])
+    
+    ################################################################################################################
     # normalization
     ################################################################################################################
-    scaler = preprocessing.StandardScaler().fit(feat_data)
+    scaler = preprocessing.StandardScaler().fit(feat_data[train]) # only fit in the train examples
     feat_data = scaler.transform(feat_data)
     ################################################################################################################
     ################################################################################################################
@@ -196,10 +214,6 @@ def run_pubmed():
 
     graphsage = SupervisedGraphSage(3, enc2)
 #    graphsage.cuda()
-    rand_indices = np.random.permutation(num_nodes)
-    test = rand_indices[:1000]
-    val = rand_indices[1000:1500]
-    train = list(rand_indices[1500:])
 
     optimizer = torch.optim.SGD(filter(lambda p : p.requires_grad, graphsage.parameters()), lr=0.7)
     times = []

@@ -115,10 +115,29 @@ def run_cora():
     klabels = kmeans.labels_
     if False:
         return labels, klabels
-    
     ######################################################################################################################
     ######################################################################################################################
     
+    
+    ###################################################################################################################
+    # AQUI EU ATRIBUO INDICES AOS CONJUNTOS USANDO AS QUANTIDADES PROPORCIONAIS DE CADA K-MEANS CLUSTER
+    ###################################################################################################################
+    #test = rand_indices[:1000]        # 1000 exemplos
+    #val = rand_indices[1000:1500]     #  500 exemplos
+    #train = list(rand_indices[1500:]) # 1208 exemplos
+    
+    train, val, test, ratio = _processes_set(klabels, num_clusters = 7, num_examples = num_nodes)
+    
+    # normalization
+    ind_train = list()
+    for key in train:
+        ind_train.extend(train[key])
+
+    scaler = preprocessing.StandardScaler().fit(feat_data[ind_train]) # only fit in the train examples
+    feat_data = scaler.transform(feat_data)
+    ###################################################################################################################
+    ###################################################################################################################
+
     features = nn.Embedding(2708, 1433)
     features.weight = nn.Parameter(torch.FloatTensor(feat_data), requires_grad=False)
     # features.cuda()
@@ -141,18 +160,6 @@ def run_cora():
     graphsage = SupervisedGraphSage(7, enc2)
 #    graphsage.cuda()
     rand_indices = np.random.permutation(num_nodes) # len(rand_indices) = 2708
-    
-    ###################################################################################################################
-    # AQUI EU ATRIBUO INDICES AOS CONJUNTOS USANDO AS QUANTIDADES PROPORCIONAIS DE CADA K-MEANS CLUSTER
-    ###################################################################################################################
-    #test = rand_indices[:1000]        # 1000 exemplos
-    #val = rand_indices[1000:1500]     #  500 exemplos
-    #train = list(rand_indices[1500:]) # 1208 exemplos
-    
-    train, val, test, ratio = _processes_set(klabels, num_clusters = 7, num_examples = num_nodes)
-    
-    ###################################################################################################################
-    ###################################################################################################################
 
     optimizer = torch.optim.SGD(filter(lambda p : p.requires_grad, graphsage.parameters()), lr=0.7)
     times = []
@@ -197,7 +204,7 @@ def run_cora():
         ##################################################################################################
         train_loss.append(loss.data[0])    # armazena o erro
         print batch, loss.data[0]
-    
+        
     end = timeit.default_timer()
     elapsed = end - begin
         

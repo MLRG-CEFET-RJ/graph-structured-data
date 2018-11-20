@@ -17,8 +17,6 @@ from sklearn import preprocessing
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 
-import timeit
-
 """
 Simple supervised GraphSAGE model as well as examples running the model
 on the Cora and Pubmed datasets.
@@ -45,7 +43,9 @@ class SupervisedGraphSage(nn.Module):
 
 def load_cora():
     num_nodes = 2708
-    num_feats = 1433
+    ######################################################################################################################
+    #num_feats = 1433  # acrescentando 3 colunas para as features do grafo
+    num_feats = 1436
     feat_data = np.zeros((num_nodes, num_feats))
     # armazena a classe de cada vertice -> shape(2708,1)
     # o valor em cada posicao referencia label_map
@@ -58,11 +58,28 @@ def load_cora():
     with open("cora/cora.content") as fp:
         for i,line in enumerate(fp):
             info = line.strip().split()
-            feat_data[i,:] = map(float, info[1:-1])
+            # cria a matriz de features retirando o primeiro e ultimo elemento, idPaper e Classe respectivamente
+            # o que sobra sao as informacoes de presenca das words (0,1)
+            feat_data[i,:-3] = map(float, info[1:-1])
             node_map[info[0]] = i
             if not info[-1] in label_map:
                 label_map[info[-1]] = len(label_map)
             labels[i] = label_map[info[-1]]
+
+    ######################################################################################################################
+    # acrescenta as features do grafo
+    ######################################################################################################################
+    with open("cora/cora_graph.content") as fp:
+        for i,line in enumerate(fp):
+            info = line.strip().split()
+            feat_data[node_map[info[0]],-3:] = map(float, info[1:])
+            
+    #print(feat_data[node_map['35'],-3:])
+    #print(feat_data[node_map['4330'],-3:])
+    #print(feat_data[node_map['312409'],-3:])
+    #print(feat_data[node_map['1154074'],-3:])
+    ######################################################################################################################
+    ######################################################################################################################
 
     adj_lists = defaultdict(set)
     with open("cora/cora.cites") as fp:
@@ -73,38 +90,40 @@ def load_cora():
             adj_lists[paper1].add(paper2)
             adj_lists[paper2].add(paper1)
             
+            
     return feat_data, labels, adj_lists
 
 
 def run_cora():
-    
-    begin = timeit.default_timer()
-    
     np.random.seed(1)
     random.seed(1)
     num_nodes = 2708
     feat_data, labels, adj_lists = load_cora()
     
-    ################################################################################################################
+    ######################################################################################################################
     # TESTAR AS DUAS FORMAS: INCLUIR NA MATRIZ DE FEATURES AS INFORMACOES
     #                        (talvez isso nao seja necessario ja que o graphsage faz os embeddings por agregacao)
     #                                                    OU
     #                        APENAS USAR O RESULTADO DO K-MEANS PARA SEPARAR OS LOTES
-    ################################################################################################################
+    ######################################################################################################################
+
+    # normalization
+    scaler = preprocessing.StandardScaler().fit(feat_data)
+    feat_data = scaler.transform(feat_data)
     
     # Metodo Elbow para encontrar o numero de classes
-    if True:
+    if False:
         wcss = [] # Within Cluster Sum of Squares
         for i in range(2, 11):
             kmeans = KMeans(n_clusters = i, init = 'random')
             kmeans.fit(feat_data)
-            print 'kmeans wcss: ', i, kmeans.inertia_
+            print i,kmeans.inertia_
             wcss.append(kmeans.inertia_)  
-        #plt.plot(range(2, 11), wcss)
-        #plt.title('O Metodo Elbow')
-        #plt.xlabel('Numero de Clusters')
-        #plt.ylabel('WCSS')
-        #plt.show()
+        plt.plot(range(2, 11), wcss)
+        plt.title('O Metodo Elbow')
+        plt.xlabel('Numero de Clusters')
+        plt.ylabel('WCSS')
+        plt.show()
         #return None, None
         
     
@@ -119,9 +138,12 @@ def run_cora():
     ######################################################################################################################
     ######################################################################################################################
     
-    features = nn.Embedding(2708, 1433)
+    
+    ######################################################################################################################
+    #features = nn.Embedding(2708, 1433)  # acrescentando 3 colunas para as features do grafo
+    features = nn.Embedding(2708, 1436)
     features.weight = nn.Parameter(torch.FloatTensor(feat_data), requires_grad=False)
-    # features.cuda()
+   # features.cuda()
 
     # MeanAggregator params
     #  features, cuda=False, gcn=False
@@ -131,7 +153,9 @@ def run_cora():
     #  gcn=False, cuda=False, feature_transform=False
     
     agg1 = MeanAggregator(features, cuda=True)
-    enc1 = Encoder(features, 1433, 128, adj_lists, agg1, gcn=True, cuda=False)
+    ######################################################################################################################
+    #enc1 = Encoder(features, 1433, 128, adj_lists, agg1, gcn=True, cuda=False)  # acrescentando 3 colunas para as features do grafo
+    enc1 = Encoder(features, 1436, 128, adj_lists, agg1, gcn=True, cuda=False)
     agg2 = MeanAggregator(lambda nodes : enc1(nodes).t(), cuda=False)
     enc2 = Encoder(lambda nodes : enc1(nodes).t(), enc1.embed_dim, 128, adj_lists, agg2,
             base_model=enc1, gcn=True, cuda=False)
@@ -149,7 +173,7 @@ def run_cora():
     #val = rand_indices[1000:1500]     #  500 exemplos
     #train = list(rand_indices[1500:]) # 1208 exemplos
     
-    train, val, test, ratio = _processes_set(klabels, num_clusters = 7, num_examples = num_nodes)
+    train, val, test, ratio = _processes_set(klabels)
     
     ###################################################################################################################
     ###################################################################################################################
@@ -197,16 +221,13 @@ def run_cora():
         ##################################################################################################
         train_loss.append(loss.data[0])    # armazena o erro
         print batch, loss.data[0]
-    
-    end = timeit.default_timer()
-    elapsed = end - begin
-        
+
     val_output = graphsage.forward(val)
     score = f1_score(labels[val], val_output.data.numpy().argmax(axis=1), average="micro")
     print "Validation F1:", score
     print "Average batch time:", np.mean(times)
     
-    return train_loss, score, elapsed
+    return train_loss, score
 
 def _processes_set(klabels, num_clusters, num_examples):
     
