@@ -69,7 +69,7 @@ def load_cora():
             adj_lists[paper2].add(paper1)
     return feat_data, labels, adj_lists
 
-def run_cora():
+def run_cora(printout = True):
     
     begin = timeit.default_timer()
     
@@ -124,15 +124,18 @@ def run_cora():
         times.append(end_time-start_time)
         ##################################################################################################
         train_loss.append(loss.data[0])    # armazena o erro
-        print batch, loss.data[0]
+        if printout:
+            print batch, loss.data[0]
 
     end = timeit.default_timer()
     elapsed = end - begin
         
     val_output = graphsage.forward(val)
     score = f1_score(labels[val], val_output.data.numpy().argmax(axis=1), average="micro")
-    print "Validation F1:", score
-    print "Average batch time:", np.mean(times)
+    
+    if printout:
+        print "Validation F1:", score
+        print "Average batch time:", np.mean(times)
     
     return train_loss, score, elapsed
 

@@ -116,10 +116,29 @@ def run_cora(printout = True):
     klabels = kmeans.labels_
     if False:
         return labels, klabels
-    
     ######################################################################################################################
     ######################################################################################################################
     
+    
+    ###################################################################################################################
+    # AQUI EU ATRIBUO INDICES AOS CONJUNTOS USANDO AS QUANTIDADES PROPORCIONAIS DE CADA K-MEANS CLUSTER
+    ###################################################################################################################
+    #test = rand_indices[:1000]        # 1000 exemplos
+    #val = rand_indices[1000:1500]     #  500 exemplos
+    #train = list(rand_indices[1500:]) # 1208 exemplos
+    
+    train, val, test, ratio = _processes_set(klabels, num_clusters = 7, num_examples = num_nodes)
+    
+    # normalization
+    ind_train = list()
+    for key in train:
+        ind_train.extend(train[key])
+
+    scaler = preprocessing.StandardScaler().fit(feat_data[ind_train]) # only fit in the train examples
+    feat_data = scaler.transform(feat_data)
+    ###################################################################################################################
+    ###################################################################################################################
+
     features = nn.Embedding(2708, 1433)
     features.weight = nn.Parameter(torch.FloatTensor(feat_data), requires_grad=False)
     # features.cuda()
@@ -142,27 +161,20 @@ def run_cora(printout = True):
     graphsage = SupervisedGraphSage(7, enc2)
 #    graphsage.cuda()
     rand_indices = np.random.permutation(num_nodes) # len(rand_indices) = 2708
-    
-    ###################################################################################################################
-    # AQUI EU ATRIBUO INDICES AOS CONJUNTOS USANDO AS QUANTIDADES PROPORCIONAIS DE CADA K-MEANS CLUSTER
-    ###################################################################################################################
-    #test = rand_indices[:1000]        # 1000 exemplos
-    #val = rand_indices[1000:1500]     #  500 exemplos
-    #train = list(rand_indices[1500:]) # 1208 exemplos
-    
-    train, val, test, ratio = _processes_set(klabels, num_clusters = 7, num_examples = num_nodes)
-    
-    ###################################################################################################################
-    ###################################################################################################################
 
     optimizer = torch.optim.SGD(filter(lambda p : p.requires_grad, graphsage.parameters()), lr=0.7)
     times = []
     
     ###################################################################################################################
     # quantidade proporcional do batch, inicializacao do vetor de erro
+    
+                                # ALTERADO PARA USAR SOMENTE 10% DOS EXEMPLOS DE TREINO
+    
     ###################################################################################################################
     quantity = np.empty((7,1), dtype=int)
-    quantity[:,0] = ratio * 256
+    #quantity[:,0] = ratio * 256         ##### ALTERADO PARA USAR SOMENTE 10% DOS EXEMPLOS DE TREINO #####
+    for i in range(7):
+        quantity[i,0] = ratio[i] * 25 if ratio[i] * 25 >= 1 else 1
     quantity = list(quantity.flatten())
     
     train_loss = list()
@@ -199,7 +211,7 @@ def run_cora(printout = True):
         train_loss.append(loss.data[0])    # armazena o erro
         if printout:
             print batch, loss.data[0]
-    
+        
     end = timeit.default_timer()
     elapsed = end - begin
         
@@ -234,6 +246,11 @@ def _processes_set(klabels, num_clusters, num_examples):
     quantity = np.empty((num_clusters,3), dtype=int)
     #quantity[:,0] = ratio * 1208
     quantity[:,0] = ratio * (len(klabels) - 1500)
+    #print quantity[:,0]
+    for i in range(7):                                    ##### ALTERADO PARA USAR SOMENTE 10% DOS EXEMPLOS DE TREINO #####
+        quantity[i,0] = quantity[i,0] * 0.1 if quantity[i,0] * 0.1 >= 1 else 1
+    #print quantity[:,0]
+
     quantity[:,1] = ratio * 500
     quantity[:,2] = ratio * 1000
     

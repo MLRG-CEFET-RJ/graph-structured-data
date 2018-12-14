@@ -86,7 +86,8 @@ def run_cora(printout = True):
     rand_indices = np.random.permutation(num_nodes) # len(rand_indices) = 2708
     test = rand_indices[:1000]        # 1000 examples
     val = rand_indices[1000:1500]     # 1500 examples
-    train = list(rand_indices[1500:]) # 1208 examples
+    # train = list(rand_indices[1500:]) # 1208 examples              # ALTERADO PARA USAR SOMENTE 10% DOS EXEMPLOS DE TREINO
+    train = list(rand_indices[1500:1620]) # 120 examples
     
     ################################################################################################################
     # normalization
@@ -125,7 +126,8 @@ def run_cora(printout = True):
     train_loss = list()   # inicializa o vetor
     
     for batch in range(100):
-        batch_nodes = train[:256]
+        #batch_nodes = train[:256]                                   # ALTERADO PARA USAR SOMENTE 10% DOS EXEMPLOS DE TREINO
+        batch_nodes = train[:25]
         random.shuffle(train)
         start_time = time.time()
         optimizer.zero_grad()
@@ -139,7 +141,6 @@ def run_cora(printout = True):
         train_loss.append(loss.data[0])    # armazena o erro
         if printout:
             print batch, loss.data[0]
-
     
     end = timeit.default_timer()
     elapsed = end - begin

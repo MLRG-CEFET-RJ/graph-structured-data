@@ -76,7 +76,7 @@ def load_cora():
     return feat_data, labels, adj_lists
 
 
-def run_cora():
+def run_cora(printout = True):
     
     begin = timeit.default_timer()
     
@@ -98,7 +98,8 @@ def run_cora():
         for i in range(2, 11):
             kmeans = KMeans(n_clusters = i, init = 'random')
             kmeans.fit(feat_data)
-            print 'kmeans wcss: ', i, kmeans.inertia_
+            if printout:
+                print 'kmeans wcss: ', i, kmeans.inertia_
             wcss.append(kmeans.inertia_)  
         #plt.plot(range(2, 11), wcss)
         #plt.title('O Metodo Elbow')
@@ -203,15 +204,17 @@ def run_cora():
         times.append(end_time-start_time)
         ##################################################################################################
         train_loss.append(loss.data[0])    # armazena o erro
-        print batch, loss.data[0]
+        if printout:
+            print batch, loss.data[0]
         
     end = timeit.default_timer()
     elapsed = end - begin
         
     val_output = graphsage.forward(val)
     score = f1_score(labels[val], val_output.data.numpy().argmax(axis=1), average="micro")
-    print "Validation F1:", score
-    print "Average batch time:", np.mean(times)
+    if printout:
+        print "Validation F1:", score
+        print "Average batch time:", np.mean(times)
     
     return train_loss, score, elapsed
 
