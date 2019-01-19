@@ -1,6 +1,8 @@
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
+
+from networkx.utils import reverse_cuthill_mckee_ordering
 from classes.Timer import Timer
 
 
@@ -28,7 +30,7 @@ class Graph:
         
         
         
-    def build_from_tsv(self, tsv_file_path, data=None, show_info=False):
+    def build_from_tsv(self, tsv_file_path, data=None, show_info=None):
         """Build a graph
         
            Builds the graph and stores it in self._graph
@@ -42,24 +44,39 @@ class Graph:
         #self._graph = nx.parse_edgelist(self._lines, nodetype = int, data=(('ajd_value',float),))
         self._graph = nx.parse_edgelist(self._lines, nodetype = int, data=data)
         self._is_connected = nx.is_connected(self._graph)
-        
-        if show_info:
-            self._means['num_triangles'] = int(sum(list(nx.triangles(self._graph).values()))/3)
-            self._means['clustering_coefficient'] = nx.average_clustering(self._graph)
-            if(self._is_connected):
-                self._means['diameter'] = nx.diameter(self._graph)
-                self._means['radius'] = nx.radius(self._graph)
-            else:
-                self._means['diameter'] = self._get_diameter_from_disconnected(self._graph)
-                self._means['radius'] = self._get_radius_from_disconnected(self._graph)
 
-            print(('Number of lines read from TSV file: %s') % len(self._lines))
-            print(nx.info(self._graph))
-            print('Number of triangles: ', self._means['num_triangles'])
-            print('Clustering coefficient: ', self._means['clustering_coefficient'])
-            print('Connected: ', '%s' % 'Yes' if self._is_connected else 'No')
-            print('Diameter: ', self._means['diameter'])
-            print('Radius: ', self._means['radius'])
+        print(('Number of lines read from TSV file: %s') % len(self._lines))
+        print(nx.info(self._graph))
+        print('Connected: ', '%s' % 'Yes' if self._is_connected else 'No')
+        
+        if show_info is not None:
+            if 'num_triangles' in show_info:
+                self._means['num_triangles'] = int(sum(list(nx.triangles(self._graph).values()))/3)
+                print('Number of triangles: ', self._means['num_triangles'])
+                
+            if 'clustering_coefficient' in show_info:
+                self._means['clustering_coefficient'] = nx.average_clustering(self._graph)
+                print('Clustering coefficient: ', self._means['clustering_coefficient'])
+                
+            if 'bandwidth' in show_info:
+                self._means['bandwidth'] = self._get_bandwidth(self._graph)
+                self._means['reduced_bandwidth'] = self._get_reduced_bandwidth(self._graph)
+                print('Bandwidth: ', self._means['bandwidth'])
+                print('Reduced Bandwidth: ', self._means['reduced_bandwidth'])
+
+            if 'diameter' in show_info:
+                if(self._is_connected):
+                    self._means['diameter'] = nx.diameter(self._graph)
+                else:
+                    self._means['diameter'] = self._get_diameter_from_disconnected(self._graph)
+                print('Diameter: ', self._means['diameter'])
+                
+            if 'radius' in show_info:
+                if(self._is_connected):
+                    self._means['radius'] = nx.radius(self._graph)
+                else:
+                    self._means['radius'] = self._get_radius_from_disconnected(self._graph)
+                print('Radius: ', self._means['radius'])
         
         Timer.finish()
         
@@ -217,6 +234,8 @@ class Graph:
             else:
                 self._measures[measure][strategy]['data'].append(self._get_radius_from_disconnected(graph))
                 
+        elif measure == 'reduced_bandwidth':
+            self._measures[measure][strategy]['data'].append(self._get_reduced_bandwidth(graph))
 
             
     def plot_analisys(self, measure_list):
@@ -340,5 +359,20 @@ class Graph:
             temp_pos[node] = 2
             
         return temp_pos
+    
+    
+    
+    def _get_bandwidth(self, graph, rcm=None):
+        A = nx.laplacian_matrix(graph, nodelist=rcm)
+        x, y = np.nonzero(A)
+        return (y - x).max() + (x - y).max() + 1
+    
+    
+    
+    def _get_reduced_bandwidth(self, graph):
+        if len(graph.edges()) == 0:
+            return 0
+        rcm = list(reverse_cuthill_mckee_ordering(graph))
+        return self._get_bandwidth(graph, rcm)
 
     
