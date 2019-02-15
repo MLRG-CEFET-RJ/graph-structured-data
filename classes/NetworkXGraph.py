@@ -362,8 +362,10 @@ class Graph:
     
     
     
-    def _get_bandwidth(self, graph, rcm=None):
-        A = nx.laplacian_matrix(graph, nodelist=rcm)
+    def _get_bandwidth(self, graph, nodelist=None):
+        if nodelist is None:
+            nodelist = sorted(graph.nodes())
+        A = nx.laplacian_matrix(graph, nodelist=nodelist)
         x, y = np.nonzero(A)
         return (y - x).max() + (x - y).max() + 1
     
