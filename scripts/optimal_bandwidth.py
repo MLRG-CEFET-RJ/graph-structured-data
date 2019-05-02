@@ -23,7 +23,7 @@ G = nx.read_graph6(sys.argv[1])
 with open(sys.argv[2]) as f:
     a = f.readlines()
 
-for i in range(1,37):
+for i in range(1,26):
 
 	# initial rcm and bandwidth
 	initial_rcm = list(reverse_cuthill_mckee_ordering(G[i]))
@@ -66,9 +66,9 @@ for i in range(1,37):
 	print('Smaller band found: {}'.format(smaller_band))
 
 	with open(result_file,'a') as f:
-		f.write(i)
-		f.write(G[i].nodes)
-		f.write(G[i].edges)
+		f.write('{}'.format(i))
+		f.write('{}'.format(G[i].nodes))
+		f.write('{}'.format(G[i].edges))
 		f.write('Initial bandwidth of G{}: {} with rcm {}'.format(i,initial_band,initial_rcm))
 		f.write('Reduced bandwidth of G{}: {} with rcm '.format(i,min_band,min_rcm))
 		f.write('Same initial band found: {}'.format(same_band))
