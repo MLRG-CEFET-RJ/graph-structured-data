@@ -23,7 +23,7 @@ G = nx.read_graph6(sys.argv[1])
 with open(sys.argv[2]) as f:
     a = f.readlines()
 
-for i in range(36):
+for i in range(1,37):
 
 	# initial rcm and bandwidth
 	initial_rcm = list(reverse_cuthill_mckee_ordering(G[i]))
