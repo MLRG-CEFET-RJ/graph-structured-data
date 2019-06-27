@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import os
+import sys
 import time
 import shutil
 import subprocess
@@ -10,6 +11,10 @@ import networkx as nx
 import numpy as np
 
 from networkx.utils import reverse_cuthill_mckee_ordering
+
+
+# param defined by user
+initial_index_file = int(sys.argv[1]) if len(sys.argv) > 1 else 0
 
 
 G6_DATA_PATH = '../datasets/graph6/n10_blocks/'
@@ -151,7 +156,7 @@ def save_larger_results(larger_result_file, larger):
 
 
 # Para cada arquivo n10_x.g6
-for idx_file in range(G6_DATA_NUM_BLOCKS):
+for idx_file in range(initial_index_file, G6_DATA_NUM_BLOCKS):
     
     # Primeiro inicio de computo do tempo
     first_start = time.time()
