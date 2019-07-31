@@ -45,7 +45,8 @@ def get_cp_fixed(cp_order):
 
 def build_dataset(num_files,show):
     rows = num_files*120052 # 120052 rows from each file
-    cols = 100 + 1 + 10  # 10x10 adj list + optimal_band + 10 optimal labels
+    #cols = 100 + 1 + 10  # 10x10 adj list + optimal_band + 10 optimal labels
+    cols = 45 + 1 + 10  # reduced adj list + optimal_band + 10 optimal labels
     data = np.zeros((rows,cols))
     row = 0
     processed = 0
@@ -65,8 +66,18 @@ def build_dataset(num_files,show):
         G = nx.read_graph6(data_file_path)
         for i,graph in enumerate(G):
             opt_band = get_bandwidth(graph,Y[i])
-            x = nx.to_numpy_array(graph).ravel()
-            data[row] = np.concatenate((x,np.array([opt_band]),Y[i]))
+            #x = nx.to_numpy_array(graph).ravel()
+            x = nx.to_numpy_array(graph)
+            x_ravel = np.zeros(45) # matriz 10x10=100; 100-diagonal=90; sup=90/2=45
+            j = 0
+            k = 1
+            for u in range(9):
+                for v in range(k,10):
+                    x_ravel[j] = x[u][v]
+                    j += 1
+                k += 1
+            #data[row] = np.concatenate((x,np.array([opt_band]),Y[i]))
+            data[row] = np.concatenate((x_ravel.copy(),np.array([opt_band]),Y[i]))
             row += 1
         if idx % show == 0:
             processed += show
