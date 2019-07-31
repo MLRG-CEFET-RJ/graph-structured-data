@@ -66,7 +66,7 @@ def build_dataset(num_files,show):
         for i,graph in enumerate(G):
             opt_band = get_bandwidth(graph,Y[i])
             x = nx.to_numpy_array(graph).ravel()
-            data[row] = np.concatenate((x,Y[i]))
+            data[row] = np.concatenate((x,np.array([opt_band]),Y[i]))
             row += 1
         if idx % show == 0:
             processed += show
