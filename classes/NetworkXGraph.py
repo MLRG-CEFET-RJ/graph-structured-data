@@ -238,25 +238,49 @@ class Graph:
             self._measures[measure][strategy]['data'].append(self._get_reduced_bandwidth(graph))
 
             
-    def plot_analisys(self, measure_list):
+    def plot_analisys(self, measure_list, prefix):
+        
+        markers = ['-*','-^','-s','-D']
         
         for measure in measure_list:
-        
             # Config of axis
             # v = [xmin, xmax, ymin, ymax]
             # v = [0, 11, 0, 5]
             # plt.axis(v)
             
-            plt.plot(np.arange(1, self._graph.number_of_nodes() + 1), [self._means[measure]]*self._graph.number_of_nodes(), label='Total Graph')
-            plt.plot(self._measures[measure]['edge_list']['m'], self._measures[measure]['edge_list']['data'], label='edge list')
-            plt.plot(self._measures[measure]['node_list']['m'], self._measures[measure]['node_list']['data'], label='node list')
-            plt.plot(self._measures[measure]['walk_list']['m'], self._measures[measure]['walk_list']['data'], label='random walk')
-            plt.legend()
-            str_title = 'Comparison of %s between strategies' % self._measures[measure]['title']
-            plt.title(str_title)
-            plt.xlabel('Number of nodes')
-            plt.ylabel(self._measures[measure]['title'])
-            plt.show()
+            #plt.plot(np.arange(1, self._graph.number_of_nodes() + 1), [self._means[measure]]*self._graph.number_of_nodes(), label='Total Graph')
+            #plt.plot(self._measures[measure]['edge_list']['m'], self._measures[measure]['edge_list']['data'], label='edge list')
+            #plt.plot(self._measures[measure]['node_list']['m'], self._measures[measure]['node_list']['data'], label='node list')
+            #plt.plot(self._measures[measure]['walk_list']['m'], self._measures[measure]['walk_list']['data'], label='random walk')
+            #plt.legend()
+            #str_title = 'Comparison of %s between strategies' % self._measures[measure]['title']
+            #plt.title(str_title)
+            #plt.xlabel('Number of nodes')
+            #plt.ylabel(self._measures[measure]['title'])
+            #plt.show()
+            
+            fig, ax = plt.subplots()
+            ax.plot(np.arange(1, self._graph.number_of_nodes() + 1), [self._means[measure]]*self._graph.number_of_nodes(), markers[0], label='Total Graph')
+            ax.plot(self._measures[measure]['edge_list']['m'], self._measures[measure]['edge_list']['data'], markers[1], label='edge list')
+            ax.plot(self._measures[measure]['node_list']['m'], self._measures[measure]['node_list']['data'], markers[2], label='node list')
+            ax.plot(self._measures[measure]['walk_list']['m'], self._measures[measure]['walk_list']['data'], markers[3], label='random walk')
+            legend = ax.legend(loc='upper right', shadow=True, fontsize='medium')
+            c_title = 'Comparison of %s between strategies' % self._measures[measure]['title']
+            ax.set(xlabel='Number of nodes', ylabel=self._measures[measure]['title'], title=c_title)
+            #ax.set(xlabel='% corruption', ylabel='% convergence')
+            ax.grid()
+
+            # Shrink current axis by 20%
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+            #ax.set_position([box.x0, box.y0, box.width, box.height])
+
+            # Put a legend to the right of the current axis
+            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+            filename = '{}_{}.png'.format(prefix, self._measures[measure]['title'])
+            fig.savefig(filename)
+            #plt.show()
 
             
         
