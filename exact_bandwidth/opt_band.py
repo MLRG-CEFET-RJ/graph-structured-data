@@ -130,6 +130,10 @@ def test_result(G, opt_seq, idx_file):
     # NOTE: Graph[0] in idx_file==0 has no edges, so it is not considered
     start = 1 if idx_file==0 else 0
     
+    # a main roda um for loop, a cada iteração pega um bloco de grafos e roda os testes
+    # para todos os grafos daquele bloco, como no primeiro bloco, o indice 0 do primeiro bloco não tem arestas
+    # ele ignora. A partir dos outros blocos de grafos idx1 em diante (1.txt, 2.txt..), 
+    # não tem mais esse problema e começa do 0
     for i in range(start,len(G)):
         rcm = list(reverse_cuthill_mckee_ordering(G[i]))
         heuristic_band = get_bandwidth('RCM', G[i], nodelist=rcm)
