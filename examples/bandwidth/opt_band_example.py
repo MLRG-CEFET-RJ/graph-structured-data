@@ -8,14 +8,17 @@ from networkx.utils import reverse_cuthill_mckee_ordering
 
 TXT_GRAPHS_FILES_EXAMPLE_PATH = './txt_graphs_files_example/'
 M_BANDWIDTH_PATH = '../../exact_bandwidth/opt_band/bin/MBandwidth'
+PATH_TO_GRAPHS_DATASETS = '../../datasets/graph6'
 BUFFER = 300
 
 def writeGraphAsTextFile(graph, idx):
+    # Write a '.txt' file for each non-isomorphic graph of n nodes
+    # i.e. each '0.txt, 1.txt...' file is a Graph of n nodes.
     edges = graph.edges()
     numberOfNodes = len(graph.nodes())
     numberOfEdges = len(graph.edges())
     text = f'{numberOfNodes} {numberOfEdges}\n'
-    # besides storing the edge values in 'text', we increment the value by 1, to be processed correctly later
+    # besides storing the edges relations in 'text', we increment the value by 1, being 1-based indexing
     for edge in edges:
         text += f'{edge[0]+1} {edge[1]+1}\n'
 
@@ -53,9 +56,10 @@ def saveAllGraphsOptimalBandsInOneTextFile(numberGraphs, result_file, numberNode
         header = ' '*150 + '\n' # header of the file will be filled later
         writer.write(header)
         records = ''
+        print(f"Executing optimal sequence for each {numberGraphs} graphs under './txt_grahps_files_example' folder")
         for i in range(numberGraphs):
-            print("Executing optimal sequence for ./txt_grahps_files_example/" + str(i) + ".txt...")
             file_path = f'{TXT_GRAPHS_FILES_EXAMPLE_PATH}{i}.txt'
+
             # Note that, in order to proper execute the next line, the script must be 
             # running in a Ubuntu/Linux operating system. 
             # I've executed on a Windows 10 machine and the following error happens:
@@ -74,10 +78,10 @@ def saveAllGraphsOptimalBandsInOneTextFile(numberGraphs, result_file, numberNode
 
             opt_sequence = get_result(lines, numberNodes)
             opt_sequence = ';'.join(opt_sequence)
-            print(f"{str(i)}.txt - {opt_sequence}")
+            # print(f"{str(i)}.txt - {opt_sequence}")
             line = f'{i};{opt_sequence}\n'
             records += line
-            if i%BUFFER == 0:
+            if i % BUFFER == 0:
                 writer.write(records)
                 records = ''
         # last records
@@ -94,10 +98,9 @@ def load_opt_seq(file_name, numberNodes):
         optimal_sequence_dict[sequence[0]] = sequence[1:] # v[0] == idGraph, v[1:] == optimal sequence
     return optimal_sequence_dict
 
-def clean():
+def clean(cleanArg):
     if os.path.exists(r'./opt_results') or os.path.exists(r'./txt_graphs_files_example'):
-        check = input("It is recommended delete text files (generated from previous executions) to start a clean execution. Delete (Y/N): ")
-        if check != 'Y':
+        if cleanArg != 'Y' and cleanArg != 'y':
             return
         shutil.rmtree(r"./opt_results")
         shutil.rmtree(r"./txt_graphs_files_example")
@@ -110,15 +113,14 @@ def get_bandwidth_nodelist_adjacency_rcm(Graph):
     return (x-y).max()
 
 
+def get_cp_fixed(cp_nodelist_order):
+    order_fixed = [0 for _ in range(len(cp_nodelist_order))]
+    for idx, element in enumerate(cp_nodelist_order):
+        order_fixed[element] = idx
+    return order_fixed
+
 def get_bandwidth_nodelist_adjacency_cp(Graph, id, optimal_sequence_dict):
     cp = optimal_sequence_dict[id]
-
-    def get_cp_fixed(cp_nodelist_order):
-        order_fixed = [0 for _ in range(len(cp_nodelist_order))]
-        for idx, element in enumerate(cp_nodelist_order):
-            order_fixed[element] = idx
-        return order_fixed
-
     A = nx.adjacency_matrix(Graph, nodelist=get_cp_fixed(cp))
     L = nx.laplacian_matrix(nx.Graph(A))
     x, y = np.nonzero(L)
@@ -145,39 +147,56 @@ def test_result(Graphs, optimal_sequence_dict):
     
     return larger,same, smaller
 
-if __name__ == '__main__' or __name__ == 'opt_band_example':
-    try:
-        if len(sys.argv) != 2 or sys.argv[1] not in ['3', '5', '7']:
-            raise ValueError("Number of nodes in a Graph required as argument\nCLI usage:\npython opt_band_example.py [3|5|7]\nOr\npython main.py [3|5|7]")
-        # Check arguments
-        file, numberNodes = sys.argv
-        numberNodes = int(numberNodes)
-        # clean the text files and optimal sequence file to make a clean run
-        clean()
+def getNumberOfG6Files(numberNodes):
+    # each g6 file contains a list of graphs.
+    # thus, each file is considered a block of graphs
+    # note that, for 5, 7 and 9 there is only 1 block of graphs 
+    numberOfBlocks = os.listdir(f'{PATH_TO_GRAPHS_DATASETS}/n{numberNodes}_blocks')
+    return len(numberOfBlocks)
 
+def cleanOnlyTextGraphs():
+    # clean text files of a block, to fill it up with the next block to be executed
+    shutil.rmtree(r"./txt_graphs_files_example")
+
+def writeOptimalSequenceTextFileForBlock(block):
+    # get a block of graphs to write the optimal sequences file for that block, under "opt_results" folder
+    # the "optimal sequences" file contains all optimal sequences for each graph in that block 
+    Graphs = nx.read_graph6(f'{PATH_TO_GRAPHS_DATASETS}/n{numberNodes}_blocks/n{numberNodes}_{block}.g6')
+    print(f"There are {len(Graphs)} non-isomorphic graphs of {numberNodes} nodes in the block {block} (.g6 file)")
+    for i in range(len(Graphs)):
+        writeGraphAsTextFile(Graphs[i], i)
+
+    result_file = f'optimalSequences_n{numberNodes}_{block}.g6.txt'
+    saveAllGraphsOptimalBandsInOneTextFile(len(Graphs), result_file, numberNodes)
+
+    optimal_sequence_dict = load_opt_seq(result_file, numberNodes)
+
+    larger,same,smaller = test_result(Graphs, optimal_sequence_dict)
+
+    # Write tests results in the 150 blanks spaces that were reserved
+    arr = [len(larger),same,smaller]
+    s = ';'.join(list(map(str, arr)))
+    path = f'./opt_results/n{numberNodes}_blocks/{result_file}'
+    with open(path, 'r+') as file:
+        file.seek(0) # move a cursor writer (or reader) to position 0
+        file.write(s)
+
+if __name__ == '__main__':
+    try:
+        if len(sys.argv) != 3 or sys.argv[1] not in ['3', '5', '7', '9', '10'] or sys.argv[2] == ' ':
+            raise ValueError("Number of nodes in the Graphs and clean flag required as arguments\nCLI usage:\npython opt_band_example.py [3|5|7] [Y|N]\n# '5' and 'Y' recommended args")
+        file, numberNodes, cleanArg = sys.argv
+        numberNodes = int(numberNodes)
+        # clean the text files and optimal sequence(s) file(s) to make a clean run
+        clean(cleanArg)
         # Read graphs
         print(f'Processing all non-isomorphic Graphs of {numberNodes} nodes...')
-        Graphs = nx.read_graph6(f'../../datasets/graph6/n{numberNodes}.g6')
-        # Write a '.txt' file for each non-isomorphic graph of n nodes (passed as argument)
-        # i.e. each '.txt' file is a Graph of n nodes.
-        print(f"There are {len(Graphs)} non-isomorphic graphs of {numberNodes} nodes")
-        for i in range(len(Graphs)):
-            writeGraphAsTextFile(Graphs[i], i)
-
-        src_file = f'n{numberNodes}_g6'
-        result_file = f'optimalSequence_{src_file}.txt'
-        saveAllGraphsOptimalBandsInOneTextFile(len(Graphs), result_file, numberNodes)
-
-        optimal_sequence_dict = load_opt_seq(result_file, numberNodes)
-
-        larger,same,smaller = test_result(Graphs, optimal_sequence_dict)
-
-        # Write tests results in the 150 blanks spaces that were reserved
-        arr = [len(larger),same,smaller]
-        s = ';'.join(list(map(str, arr)))
-        path = f'./opt_results/n{numberNodes}_blocks/{result_file}'
-        with open(path, 'r+') as file:
-            file.seek(0) # move a cursor writer (or reader) to position 0
-            file.write(s)
+        number_of_graphlist_files_for_N_nodes = getNumberOfG6Files(numberNodes)
+        for block in range(number_of_graphlist_files_for_N_nodes):
+            if number_of_graphlist_files_for_N_nodes > 1:
+                cleanOnlyTextGraphs()
+                # last execution will maintain the text files to be used by build_Dataset_v2_example.py
+            writeOptimalSequenceTextFileForBlock(block)
     except Exception as e:
+        print('Error:')
         print(e)
