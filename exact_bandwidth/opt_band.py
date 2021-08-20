@@ -175,7 +175,7 @@ for idx_file in range(initial_index_file, G6_DATA_NUM_BLOCKS):
     for i in range(len(G)):
         write_txt_file(G[i],i)
 
-    # Obtenho a banda com o programa em C e salvo a opt_sequence em arquivo (todas as opt_sequence em um único arquivo)
+    # Obtenho a banda com o programa em C e salvo a opt_sequence em arquivo (todas as opt_sequence de um bloco de grafos em um único arquivo)
     result_file = 'opt_seq_{}.txt'.format(src_file)
     save_opt_band(len(G), result_file)
 

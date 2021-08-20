@@ -44,7 +44,8 @@ def get_cp_fixed(cp_order):
 
 
 def build_dataset(num_files,show):
-    rows = num_files*120052 # 120052 rows from each file
+    rows = num_files*120052 # 120052 rows from each file, because
+    # each opt_seq_n10_{idx}.g6.txt has 120052 optimal sequences
     #cols = 100 + 1 + 10  # 10x10 adj list + optimal_band + 10 optimal labels
     cols = 45 + 1 + 10  # reduced adj list + optimal_band + 10 optimal labels
     data = np.zeros((rows,cols))
