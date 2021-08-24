@@ -45,7 +45,7 @@ def get_result(stdout, num_nodes):
         result.append(line[2:-1].decode()) # removing old nodes and '\n'
     return result
 
-def saveAllGraphsOptimalBandsInOneTextFile(numberGraphs, result_file, numberNodes):
+def saveAllGraphsOptimalBandsInOneTextFile(numberGraphs, result_file, numberNodes, block):
     path = f'./opt_results/n{numberNodes}_blocks/'
     if not os.path.exists(path):
         os.mkdir('./opt_results')
@@ -56,8 +56,10 @@ def saveAllGraphsOptimalBandsInOneTextFile(numberGraphs, result_file, numberNode
         header = ' '*150 + '\n' # header of the file will be filled later
         writer.write(header)
         records = ''
-        print(f"Executing optimal sequence for each {numberGraphs} graphs under './txt_grahps_files_example' folder")
         for i in range(numberGraphs):
+            if i % 300 == 0:
+                print(f"Executing optimal sequence {numberGraphs} graphs under './txt_grahps_files_example' folder. Current Graph - {i} of block {block}")
+
             file_path = f'{TXT_GRAPHS_FILES_EXAMPLE_PATH}{i}.txt'
 
             # Note that, in order to proper execute the next line, the script must be 
@@ -167,7 +169,7 @@ def writeOptimalSequenceTextFileForBlock(block):
         writeGraphAsTextFile(Graphs[i], i)
 
     result_file = f'optimalSequences_n{numberNodes}_{block}.g6.txt'
-    saveAllGraphsOptimalBandsInOneTextFile(len(Graphs), result_file, numberNodes)
+    saveAllGraphsOptimalBandsInOneTextFile(len(Graphs), result_file, numberNodes, block)
 
     optimal_sequence_dict = load_opt_seq(result_file, numberNodes)
 
@@ -184,7 +186,7 @@ def writeOptimalSequenceTextFileForBlock(block):
 if __name__ == '__main__':
     try:
         if len(sys.argv) != 3 or sys.argv[1] not in ['3', '5', '7', '9', '10'] or sys.argv[2] == ' ':
-            raise ValueError("Number of nodes in the Graphs and clean flag required as arguments\nCLI usage:\npython opt_band_example.py [3|5|7] [Y|N]\n# '5' and 'Y' recommended args")
+            raise ValueError("Number of nodes in the Graphs and clean flag required as arguments\nCLI usage:\npython opt_band_example.py [3|5|7|9|10] [Y|N]\n# '5' and 'Y' recommended args")
         file, numberNodes, cleanArg = sys.argv
         numberNodes = int(numberNodes)
         # clean the text files and optimal sequence(s) file(s) to make a clean run
@@ -195,7 +197,7 @@ if __name__ == '__main__':
         for block in range(number_of_graphlist_files_for_N_nodes):
             if number_of_graphlist_files_for_N_nodes > 1:
                 cleanOnlyTextGraphs()
-                # last execution will maintain the text files to be used by build_Dataset_v2_example.py
+                # last execution will maintain the text files to be used by build_dataset_v2_example.py
             writeOptimalSequenceTextFileForBlock(block)
     except Exception as e:
         print('Error:')

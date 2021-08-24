@@ -1,5 +1,4 @@
 import sys
-from networkx.classes.graph import Graph
 import pandas as pd
 import numpy as np
 import networkx as nx
@@ -12,6 +11,23 @@ def get_optimal_bandwidth(G, nodelist):
     L = nx.laplacian_matrix(G,nodelist=nodelist)
     x,y = np.nonzero(L)
     return (x-y).max()
+
+def buildCSVDataset(data, numberNodes):
+    digits = (numberNodes * numberNodes - numberNodes) // 2
+    bandwidthValue = 1
+    labels = numberNodes
+    columns = []
+
+    for i in range(digits):
+        columns.append(f'xDigit_{i}')
+    columns.append("opt_band")
+    for j in range(labels):
+        columns.append(f"yLabel_{j}")
+
+    df = pd.DataFrame(data, columns=tuple(columns))
+    csv_text = df.to_csv(index=False, line_terminator='\n')
+    with open(f'../../datasets/examples/opt_band_{numberNodes}_nodes_graph.csv', 'w') as writer:
+        writer.write(csv_text)
 
 def build_dataset(*args):
     numberBlocks, numberNodes, numberTotalSequences, target, verbose = args
@@ -38,7 +54,7 @@ def build_dataset(*args):
 
         # each row holds the upper triangle flattened, optimal bandwidth and optimal nodelist as columns
         # this will be the dataset to be passed into the neural network, stored as a ".npy" matrix
-        Graphs = nx.read_graph6(f'{PATH_TO_GRAPHS_DATASETS}/graph6/n{numberNodes}_blocks/n{numberNodes}_{block}.g6')
+        Graphs = nx.read_graph6(f'{PATH_TO_GRAPHS_DATASETS}/n{numberNodes}_blocks/n{numberNodes}_{block}.g6')
         for i, graph in enumerate(Graphs):
             opt_band = get_optimal_bandwidth(graph, optimalSequences[i])
             floatAdjMatrix = nx.to_numpy_array(graph)
@@ -47,9 +63,10 @@ def build_dataset(*args):
             upperTriangleFlatten = np.array([floatAdjMatrix[row][column] for row in range(numberNodes - 1) for column in range(row + 1, numberNodes)])
             data[row] = np.concatenate((np.array(upperTriangleFlatten, copy=True), np.array([opt_band]), optimalSequences[i]))
             row += 1
-        if verbose and block % numberTotalSequences // 4 == 0:
+        if verbose and block % (numberTotalSequences // 4) == 0:
             print(f'{block + 1} blocks processed, total of {len(Graphs)} optimal sequences in the block just executed.')
-    np.save(target, data)
+    # np.save(target, data)
+    buildCSVDataset(data, numberNodes)
 
 def getNumberOptimalSequenceFiles(numberNodes):
     arr = os.listdir(f'./opt_results/n{numberNodes}_blocks')
@@ -80,13 +97,13 @@ if __name__ == '__main__':
         
         numberBlocks = getNumberOptimalSequenceFiles(numberNodes)
         numberTotalSequences = get_number_of_total_sequences(numberNodes, numberBlocks)
-        target = f'../../datasets/examples/opt_band_{numberNodes}_nodes_graph.npy'
+        target = f'../../datasets/examples/opt_band_{numberNodes}_nodes_graph.csv'
         print(f"Processing {numberBlocks} optimal sequence files, total of {numberTotalSequences} sequences...")
         build_dataset(numberBlocks, numberNodes, numberTotalSequences, target, verbose)
 
         
-        dataset = np.load(target)
-        print(f'Dataset created in path {target} with shape {dataset.shape}')
+        # dataset = np.load(target)
+        print(f'Dataset created in path {target}. head: \n{pd.read_csv(target).head()}')
     except Exception as e:
         print('Error:\n')
         print(e)
