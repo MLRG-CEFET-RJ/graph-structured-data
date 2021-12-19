@@ -1,10 +1,11 @@
 examples/bandwidth/CNN/graphs_*
 examples/bandwidth/CNN/graphs_adj_*
 examples/bandwidth/CNN/test_graphs_*
-examples/bandwidth/CNN/test_adj_graphs_*
+examples/bandwidth/CNN/test_adj*
 examples/bandwidth/CNN/CNN_customLoss/dataset*
 examples/bandwidth/txt_graphs_files_example/*
 examples/bandwidth/opt_results/*
+examples/bandwidth/CNN/annotations_file_*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
