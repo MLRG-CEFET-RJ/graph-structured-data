@@ -14,7 +14,6 @@ def get_optimal_bandwidth(G, nodelist):
 
 def buildCSVDataset(data, numberNodes):
     digits = (numberNodes * numberNodes - numberNodes) // 2
-    bandwidthValue = 1
     labels = numberNodes
     columns = []
 
@@ -23,18 +22,15 @@ def buildCSVDataset(data, numberNodes):
     columns.append("opt_band")
     for j in range(labels):
         columns.append(f"yLabel_{j}")
-
-    df = pd.DataFrame(data, columns=tuple(columns))
-    csv_text = df.to_csv(index=False, line_terminator='\n')
-    with open(f'../../datasets/examples/opt_band_{numberNodes}_nodes_graph.csv', 'w') as writer:
-        writer.write(csv_text)
+    data = pd.DataFrame(data, columns=tuple(columns))
+    data.to_csv(f'../../datasets/examples/opt_band_{numberNodes}_nodes_graph.csv', index=False, line_terminator='\n')
 
 def build_dataset(*args):
-    numberBlocks, numberNodes, numberTotalSequences, target, verbose = args
+    numberBlocks, numberNodes, numberTotalSequences, verbose = args
 
     rows = numberTotalSequences
     numberDigitsAdjcencyMatrix = (numberNodes * numberNodes - numberNodes) // 2
-    # cols = 45 + 1 + 10  
+    # cols = 45 + 1 + 10
     # 10x10 upper triangle not optimal adjcency list + optimal_band (value) + 10 optimal labels (nodelist)
     # We are handling with symmetric adjcency lists (get the upper triangle from the main diagonal)
     cols = numberDigitsAdjcencyMatrix + 1 + numberNodes
@@ -42,10 +38,9 @@ def build_dataset(*args):
     row = 0
     for block in range(numberBlocks):
         optimalSequence_i_file = f'./opt_results/n{numberNodes}_blocks/optimalSequences_n{numberNodes}_{block}.g6.txt'
-        df = pd.read_csv(optimalSequence_i_file, sep=';', dtype=int, header=None, skiprows=1, usecols=list(range(1, numberNodes + 1)))
-        optimalSequences = df.values
+        optimalSequences = pd.read_csv(optimalSequence_i_file, sep=';', dtype=int, header=None, skiprows=1, usecols=list(range(1, numberNodes + 1))).values
         optimalSequences = list(map(get_cp_fixed, optimalSequences))
-        optimalSequences = np.array(optimalSequences)
+        # optimalSequences = np.array(optimalSequences)
         # optimalSequences is a matrix, idx 0 (row 0) is graph 0, 
         # index 0 contains a list that represents its optimal sequence nodelist.
         # Data from the optimalSequence_n{NUMBER_NODES}_g6.txt
@@ -53,7 +48,7 @@ def build_dataset(*args):
         # but rather than returning a dict like load_opt_seq, this time we got an array
 
         # each row holds the upper triangle flattened, optimal bandwidth and optimal nodelist as columns
-        # this will be the dataset to be passed into the neural network, stored as a ".npy" matrix
+        # this will be the dataset to be passed into the neural network, stored as a ".csv" matrix
         Graphs = nx.read_graph6(f'{PATH_TO_GRAPHS_DATASETS}/n{numberNodes}_blocks/n{numberNodes}_{block}.g6')
         for i, graph in enumerate(Graphs):
             opt_band = get_optimal_bandwidth(graph, optimalSequences[i])
@@ -61,9 +56,9 @@ def build_dataset(*args):
             # "nx.to_numpy_array" is the same as "nx.adjacency matrix", but later we'll
             # use pytorch, a neural network works better with floats, since we have lot of 'wx + b' operations
             upperTriangleFlatten = np.array([floatAdjMatrix[row][column] for row in range(numberNodes - 1) for column in range(row + 1, numberNodes)])
-            data[row] = np.concatenate((np.array(upperTriangleFlatten, copy=True), np.array([opt_band]), optimalSequences[i]))
+            data[row] = np.concatenate((np.array(upperTriangleFlatten), np.array([opt_band]), optimalSequences[i]))
             row += 1
-        if verbose and block % (numberTotalSequences // 4) == 0:
+        if verbose and block % 4 == 0:
             print(f'{block + 1} blocks processed, total of {len(Graphs)} optimal sequences in the block just executed.')
     # np.save(target, data)
     buildCSVDataset(data, numberNodes)
@@ -89,7 +84,7 @@ def get_number_of_total_sequences(numberNodes, numberBlocks):
 
 if __name__ == '__main__':
     try:
-        if len(sys.argv) != 3 or sys.argv[1] not in ['3', '5', '7', '9', '10'] or sys.argv[2] == ' ':
+        if len(sys.argv) != 3 or sys.argv[1] not in ['3', '5', '7', '9', '10']:
             raise ValueError("Number of nodes in the Graphs and verbose flag required as arguments\nCLI usage:\npython build_dataset_v2_example.py [3|5|7] [0|1]\n# '5' and '0' recommended args")
         file, numberNodes, verbose = sys.argv
         numberNodes = int(numberNodes)
@@ -98,12 +93,12 @@ if __name__ == '__main__':
         numberBlocks = getNumberOptimalSequenceFiles(numberNodes)
         numberTotalSequences = get_number_of_total_sequences(numberNodes, numberBlocks)
         target = f'../../datasets/examples/opt_band_{numberNodes}_nodes_graph.csv'
-        print(f"Processing {numberBlocks} optimal sequence files, total of {numberTotalSequences} sequences...")
-        build_dataset(numberBlocks, numberNodes, numberTotalSequences, target, verbose)
-
+        print(f"Processing {numberBlocks} optimal sequence files (blocks), total of {numberTotalSequences} sequences...")
+        build_dataset(numberBlocks, numberNodes, numberTotalSequences, verbose)
         
         # dataset = np.load(target)
-        print(f'Dataset created in path {target}. head: \n{pd.read_csv(target).head()}')
+        if verbose:
+            print(f'Dataset created in path {target}. head: \n{pd.read_csv(target).head()}')
     except Exception as e:
         print('Error:\n')
         print(e)

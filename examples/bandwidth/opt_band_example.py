@@ -16,7 +16,7 @@ def writeGraphAsTextFile(graph, idx):
     # i.e. each '0.txt, 1.txt...' file is a Graph of n nodes.
     edges = graph.edges()
     numberOfNodes = len(graph.nodes())
-    numberOfEdges = len(graph.edges())
+    numberOfEdges = len(edges)
     text = f'{numberOfNodes} {numberOfEdges}\n'
     # besides storing the edges relations in 'text', we increment the value by 1, being 1-based indexing
     for edge in edges:
@@ -58,7 +58,7 @@ def saveAllGraphsOptimalBandsInOneTextFile(numberGraphs, result_file, numberNode
         records = ''
         for i in range(numberGraphs):
             if i % 300 == 0:
-                print(f"Executing optimal sequence {numberGraphs} graphs under './txt_grahps_files_example' folder. Current Graph - {i} of block {block}")
+                print(f"Executing optimal sequence for {numberGraphs} graphs under './txt_grahps_files_example' folder. Current Graph - {i} of block {block}")
 
             file_path = f'{TXT_GRAPHS_FILES_EXAMPLE_PATH}{i}.txt'
 
@@ -75,8 +75,9 @@ def saveAllGraphsOptimalBandsInOneTextFile(numberGraphs, result_file, numberNode
             # print("LINESS")
             # print(type(lines)) # list of bytes
             # print(f"Processing non-isomorphic graph ({numberNodes} nodes) => {file_path} ")
-            # for i in range(len(lines)):
-            #     print(lines[i])
+            # for j in range(len(lines)):
+            #     print(lines[j])
+            # print("END LINES")
 
             opt_sequence = get_result(lines, numberNodes)
             opt_sequence = ';'.join(opt_sequence)
@@ -160,7 +161,7 @@ def cleanOnlyTextGraphs():
     # clean text files of a block, to fill it up with the next block to be executed
     shutil.rmtree(r"./txt_graphs_files_example")
 
-def writeOptimalSequenceTextFileForBlock(block):
+def writeOptimalSequenceTextFileForBlock(block, numberNodes):
     # get a block of graphs to write the optimal sequences file for that block, under "opt_results" folder
     # the "optimal sequences" file contains all optimal sequences for each graph in that block 
     Graphs = nx.read_graph6(f'{PATH_TO_GRAPHS_DATASETS}/n{numberNodes}_blocks/n{numberNodes}_{block}.g6')
@@ -193,12 +194,12 @@ if __name__ == '__main__':
         clean(cleanArg)
         # Read graphs
         print(f'Processing all non-isomorphic Graphs of {numberNodes} nodes...')
-        number_of_graphlist_files_for_N_nodes = getNumberOfG6Files(numberNodes)
-        for block in range(number_of_graphlist_files_for_N_nodes):
-            if number_of_graphlist_files_for_N_nodes > 1:
+        numberG6Files = getNumberOfG6Files(numberNodes)
+        for block in range(numberG6Files):
+            if numberG6Files > 1:
                 cleanOnlyTextGraphs()
-                # last execution will maintain the text files to be used by build_dataset_v2_example.py
-            writeOptimalSequenceTextFileForBlock(block)
+                # last execution will maintain the last block
+            writeOptimalSequenceTextFileForBlock(block, numberNodes)
     except Exception as e:
         print('Error:')
         print(e)
