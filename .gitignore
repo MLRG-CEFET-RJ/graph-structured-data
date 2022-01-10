@@ -6,6 +6,12 @@ examples/bandwidth/CNN/CNN_customLoss/dataset*
 examples/bandwidth/txt_graphs_files_example/*
 examples/bandwidth/opt_results/*
 examples/bandwidth/CNN/annotations_file_*
+examples/bandwidth/CNN/pix2pix/LASTRUN_*
+examples/bandwidth/CNN/pix2pix/test
+examples/bandwidth/CNN/pix2pix/train
+examples/bandwidth/CNN/pix2pix/logs
+examples/bandwidth/CNN/pix2pix/training_checkpoints
+examples/bandwidth/DNN/opt_band_*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -112,6 +112,7 @@ class CustomLoss(torch.nn.Module):
       diffLabelCounts = (output.shape[0] - counts.shape[0])**2
       sampleVariance = torch.var(counts, unbiased=False)
 
+        # TODO torch.where
       if diffLabelCounts == 0 and sampleVariance != 0:
           diffLabelCounts = 1
       if sampleVariance == 0 and diffLabelCounts != 0:
