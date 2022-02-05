@@ -12,7 +12,13 @@ examples/bandwidth/CNN/pix2pix/train
 examples/bandwidth/CNN/pix2pix/logs
 examples/bandwidth/CNN/pix2pix/training_checkpoints
 examples/bandwidth/DNN/opt_band_*
-
+examples/bandwidth/DNN/checkpoint*
+examples/bandwidth/DNN/loss*
+examples/bandwidth/DNN/datasets/*.csv
+examples/bandwidth/CNN/torch_dir_adj2/dataset*
+examples/bandwidth/CNN/CNN_dir_band_model
+examples/bandwidth/DNN/multiOutputRegression/catboost_info
+examples/bandwidth/DNN/multiOutputRegression/*.csv
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
