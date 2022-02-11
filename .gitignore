@@ -2,6 +2,7 @@ examples/bandwidth/CNN/graphs_*
 examples/bandwidth/CNN/graphs_adj_*
 examples/bandwidth/CNN/test_graphs_*
 examples/bandwidth/CNN/test_adj*
+examples/bandwidth/CNN/train_adj*
 examples/bandwidth/CNN/CNN_customLoss/dataset*
 examples/bandwidth/txt_graphs_files_example/*
 examples/bandwidth/opt_results/*
@@ -15,9 +16,20 @@ examples/bandwidth/DNN/opt_band_*
 examples/bandwidth/DNN/checkpoint*
 examples/bandwidth/DNN/loss*
 examples/bandwidth/DNN/datasets/*.csv
+<<<<<<< HEAD
+examples/bandwidth/CNN/CNN_dir_band_model
+examples/bandwidth/CNN/CNN_dir_adj2_model
+examples/bandwidth/CNN/CNN_dir_model
+examples/bandwidth/CNN/torch_CNN_adj/dataset*
+examples/bandwidth/CNN/torch_CNN_adj/annotations*
+examples/bandwidth/CNN/class_names-COPY.pickle
+examples/bandwidth/DNN/multiOutputRegression/catboost_info
+examples/bandwidth/DNN/multiOutputRegression/learning_rate*
+=======
 examples/bandwidth/CNN/torch_dir_adj2/dataset*
 examples/bandwidth/CNN/CNN_dir_band_model
 examples/bandwidth/DNN/multiOutputRegression/catboost_info
+>>>>>>> 1d0e9b664cc14b32ba1e1030631b28403ca31716
 examples/bandwidth/DNN/multiOutputRegression/*.csv
 # Byte-compiled / optimized / DLL files
 __pycache__/
