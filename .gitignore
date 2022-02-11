@@ -25,6 +25,7 @@ examples/bandwidth/DNN/multiOutputRegression/*.csv
 # misc
 examples/bandwidth/txt_graphs_files_example/*
 examples/bandwidth/opt_results/*
+examples/bandwidth/PointerNetworks*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
