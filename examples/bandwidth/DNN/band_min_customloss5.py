@@ -355,6 +355,11 @@ sumTest_true = 0
 
 count = 0
 at_least_one_repetition = 0
+
+model = NeuralNetwork().to(device)
+path = os.path.join(os.path.dirname(__file__), f'checkpoint5_{args.vertices}nodes_{args.name}.pt')
+model.load_state_dict(torch.load(path))
+
 for x, y in test_dataloader:
   x, y = x.to(device), y.to(device)
   output = model(x)

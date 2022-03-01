@@ -25,7 +25,8 @@ examples/bandwidth/DNN/multiOutputRegression/*.csv
 # misc
 examples/bandwidth/txt_graphs_files_example/*
 examples/bandwidth/opt_results/*
-examples/bandwidth/PointerNetworks*
+examples/bandwidth/PointerNetworks/*
+!examples/bandwidth/PointerNetworks/higgsfield_ckpt
 examples/bandwidth/NMT/
 
 # Byte-compiled / optimized / DLL files
