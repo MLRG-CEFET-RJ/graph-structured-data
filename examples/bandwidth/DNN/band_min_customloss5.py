@@ -19,6 +19,7 @@ np.random.seed(42)
 parser = argparse.ArgumentParser(description='Pytorch - Deep learning custom loss')
 parser.add_argument('-v','--vertices', help='number of vertices dataset [7, 9]', required=True)
 parser.add_argument('-n','--name', help='run custom name [ex.: run_5nodes_v1]', required=True)
+parser.add_argument('-b','--batch', help='batch size', required=True)
 args = parser.parse_args()
 
 # %%
@@ -26,14 +27,14 @@ NUMBER_NODES = int(args.vertices)
 
 # %%
 def load_data():
-    train_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_train.csv'))
-    val_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_val.csv'))
-    test_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_test.csv'))
+    train_df = pd.read_csv(os.path.join('datasets', f'dataset_{NUMBER_NODES}_train.csv'))
+    val_df = pd.read_csv(os.path.join('datasets', f'dataset_{NUMBER_NODES}_val.csv'))
+    test_df = pd.read_csv(os.path.join('datasets', f'dataset_{NUMBER_NODES}_test.csv'))
 
     featuresNumber = (NUMBER_NODES * NUMBER_NODES - NUMBER_NODES) // 2 
     def get_tuple_tensor_dataset(row):
         X = row[0 : featuresNumber].astype('float32')
-        Y = row[featuresNumber: ].astype('float32') # Inclui a banda otima na posicao 0
+        Y = row[featuresNumber + 1: ].astype('float32') # Pula a banda otima na posicao 0
         return torch.from_numpy(X), torch.from_numpy(Y)
 
     train_df = pd.concat((train_df, val_df))
@@ -74,7 +75,7 @@ class DeviceDataLoader():
         return len(self.dl)
 
 # %%
-BATCH_SIZE = 64
+BATCH_SIZE =  int(args.batch)
 train_dataloader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=BATCH_SIZE, shuffle=False)
 
@@ -133,10 +134,18 @@ class CustomLoss(torch.nn.Module):
         super(CustomLoss,self).__init__()
 
     def loss_repeated_labels(self, roundedOutput):
-      # computes the sample variance + (shapeItShouldBe - ShapeItIs)**2
-      used_labels, counts = torch.unique(roundedOutput, return_counts=True)
-      counts = counts.type(torch.DoubleTensor)
-      return torch.var(counts, unbiased=False) + (roundedOutput.shape[0] - counts.shape[0])**2
+        batch_size = roundedOutput.shape[0]
+
+        used_labels, counts = torch.unique(roundedOutput, return_counts=True)
+        counts = counts.type(torch.DoubleTensor)
+
+        counts_shape = counts.shape[0]
+        # output_shape = roundedOutput.shape[1]
+
+        optimalCounts = torch.ones(counts_shape) * batch_size
+
+        # return ((counts - optimalCounts)**2).mean() + (output_shape - counts_shape)
+        return ((counts - optimalCounts)**2).mean()
 
     def mse_repeated_labels(self, roundedOutput):
       # computes the MSE of ([2., 1., 1.] - [1., 1., 1.])
@@ -165,37 +174,35 @@ class CustomLoss(torch.nn.Module):
 
       except Exception as e:
         output_band = 2 * target[0]
-      loss_mse = ((output - target[1:])**2).mean()
+      loss_mse = ((output - target)**2).mean()
 
       roundedOutput = output.round()
       loss_repeated = self.loss_repeated_labels(roundedOutput)
-      levenshtein = self.levenshtein_distance(roundedOutput)
-      mse_ones_like = self.mse_repeated_labels(roundedOutput)
-      return loss_mse + loss_repeated + levenshtein
+    #   levenshtein = self.levenshtein_distance(roundedOutput)
+    #   mse_ones_like = self.mse_repeated_labels(roundedOutput)
+      return loss_mse + loss_repeated
 
 # %%
 teste = CustomLoss()
 y_pred = torch.tensor([0., 1., 1., 2., 2., 3., 1.])
-y_true = torch.tensor([0., 0., 1., 2., 3., 4., 5., 6.])
+y_true = torch.tensor([0., 1., 2., 3., 4., 5., 6.])
 teste.forward(y_pred, y_true)
 
 # %%
+criterion = CustomLoss()
 def train(dataloader, model, optimizer, epoch):
-    criterion = CustomLoss()
     model.train() # turn on possible layers/parts specific for training, like Dropouts for example
     train_loss = 0
     for batch, (X, y) in enumerate(dataloader):
-        for input, target in zip(X, y):
-            input, target = input.to(device), target.to(device)
-            pred = model(input)
-            loss = criterion(pred, target)
+        pred = model(X)
+        loss = criterion(pred, y)
 
-            # Backpropagation
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+        # Backpropagation
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
-            train_loss += loss.item()
+        train_loss += loss.item()
 
     return (train_loss / len(dataloader))
 
@@ -204,14 +211,12 @@ def validate(dataloader, model):
     eval_loss = 0
     # with torch.no_grad(): # turn off gradients computation
     for x, y in dataloader:
-        for input, target in zip(x, y):
-            input, target = input.to(device), target.to(device)
-            pred = model(input)
+        pred = model(x)
 
-            criterion = CustomLoss()
-            loss = criterion(pred, target)
+        criterion = CustomLoss()
+        loss = criterion(pred, y)
 
-            eval_loss += loss.item()
+        eval_loss += loss.item()
     return (eval_loss / len(dataloader))
 
 # %%
@@ -261,7 +266,7 @@ class EarlyStopping:
         self.val_loss_min = val_loss
 
 # %%
-epochs = 20000
+epochs = 10000
 
 model = NeuralNetwork().to(device)
 print(model)
@@ -313,7 +318,6 @@ def count_repeats(output):
     return repeated
 
 def getGraph(upperTriangleAdjMatrix):
-    dense_adj = np.zeros((NUMBER_NODES, NUMBER_NODES))
     dense_adj = np.zeros((NUMBER_NODES, NUMBER_NODES))
     k = 0
     for i in range(NUMBER_NODES):
