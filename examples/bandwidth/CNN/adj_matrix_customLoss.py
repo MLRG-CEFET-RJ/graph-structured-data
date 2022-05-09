@@ -1,3 +1,4 @@
+# %%
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
@@ -12,8 +13,21 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.preprocessing import MultiLabelBinarizer
 from tensorflow.python.ops import gen_array_ops
 from PIL import Image
+import argparse
 
-NUMBER_NODES = 9
+# the file remains as the same, but get different data (to be compared and calculates bandwidth mean)
+
+parser = argparse.ArgumentParser(description='Pytorch - Deep learning custom loss')
+parser.add_argument('-v','--vertices', help='number of vertices dataset [7, 9]', required=True)
+parser.add_argument('-n','--name', help='run custom name [ex.: run_5nodes_v1]', required=True)
+parser.add_argument('-b','--batch', help='batch size', required=True)
+args = parser.parse_args()
+
+# %%
+tf.executing_eagerly()
+
+# %%
+NUMBER_NODES = int(args.vertices)
 
 def load_data():
     train_df = pd.read_csv(os.path.join('..', 'DNN', 'datasets', f'dataset_{NUMBER_NODES}_train.csv'))
@@ -60,13 +74,15 @@ def load_data():
 
     return x_train, y_train, x_test, y_test
 
+# %%
 X, y, x_t, y_t = load_data()
 
+# %%
 print(X.shape)
 print(y.shape)
 
+# %%
 def getGraph(upperTriangleAdjMatrix):
-    dense_adj = np.zeros((NUMBER_NODES, NUMBER_NODES))
     dense_adj = np.zeros((NUMBER_NODES, NUMBER_NODES))
     k = 0
     for i in range(NUMBER_NODES):
@@ -88,12 +104,30 @@ def processDataToAdjImage(graphInput):
         for j in range(len(adj)):
             if adj[i, j] == 1:
                 data[i, j] = np.array([255.0, 255.0, 255.0])
-    # data /= 255.0
     img = Image.fromarray(data, 'RGB')
-    resized = img.resize((32, 32), Image.NEAREST)
+    resized = img.resize((NUMBER_NODES * 4, NUMBER_NODES * 4), Image.NEAREST)
     image_input_np = np.array(resized)
     return image_input_np
+# def processDataToImage(graphInput):
+#     graph_adj = getGraph(graphInput)
+#     plt.imshow(graph_adj, cmap="gray")
+#     plt.xticks([])
+#     plt.yticks([])
+#     plt.savefig(f'./Graph_adj_input_mse.png')
+#     plt.clf()
+#     image_input = tf.keras.preprocessing.image.load_img(f'./Graph_adj_input_mse.png')
+#     image_input_arr = tf.keras.preprocessing.image.img_to_array(image_input)
+#     image_input_np = np.array(image_input_arr)
+#     # image_input_np = image_input_np / 255.0
 
+#     image_input_np = tf.image.resize(image_input_np, [32, 32])
+#     return image_input_np
+print(getGraph(X[0]).astype(np.int32))
+img = processDataToAdjImage(X[0])
+plt.imshow(img)
+plt.savefig(f'entry_{args.name}.jpg')
+
+# %%
 def getData_2(features, labels):
     train_images = []
     train_nodelist = []
@@ -106,40 +140,96 @@ def getData_2(features, labels):
     # labels = mlb.fit_transform(train_nodelist)
     return np.array(train_images), np.array(train_nodelist)
 
+# %%
 X_train, y_train = getData_2(X, y)
 x_test, y_test = getData_2(x_t, y_t)
 
 print(X_train.shape)
 print(y_train.shape)
+print(x_test.shape)
+print(y_test.shape)
 
+# %%
 it = iter(X_train)
+it2 = iter(X)
 entry = next(it)
-entry
+entry2 = next(it2)
+getGraph(entry2)
 
+# %%
 plt.imshow(entry)
-plt.savefig('an_entry_9vertices.jpg')
+plt.show()
 plt.clf()
+
+# %%
+# This cell is to show an example of the custom loss
+def body_example(i, acc, out):
+  used_labels, indexes, counts = tf.unique_with_counts(out[i])
+  counts = tf.cast(counts, tf.float32)
+  variance = tf.math.reduce_variance(counts)
+  return (i + 1, tf.add(acc, variance), out)
+
+def loss_repeated_labels_example(roundedOutput):
+  acc = tf.constant(0, dtype=tf.float32)
+  out = roundedOutput
+  batch_size = tf.shape(roundedOutput)[0]
+
+  i = tf.constant(0)
+  c = lambda i, acc, out: tf.less(i, batch_size)
+  b = body_example
+  r = tf.while_loop(c, b, loop_vars=[i, acc, out])
+  return r
+
+output = tf.constant([[1, 2, 1], [3, 4, 3]])
+output[0]
+
+i, loss, out = loss_repeated_labels_example(output)
+print(i)
+print(loss)
+print(out)
+
+used_labels, indexes, counts1 = tf.unique_with_counts(output[0])
+used_labels, indexes, counts2 = tf.unique_with_counts(output[1])
+counts1 = tf.cast(counts1, tf.float32)
+counts2 = tf.cast(counts2, tf.float32)
+variance1 = tf.math.reduce_variance(counts1)
+variance2 = tf.math.reduce_variance(counts2)
+print(variance1)
+print(variance2)
+print(tf.add(variance1, variance2))
+
+# %%
+import tensorflow.keras.backend as K
 
 mseLoss = tf.keras.losses.MeanSquaredError()
 
 def loss_repeated_labels(roundedOutput):
-  # true_used, true_indexes = tf.unique(tf.squeeze(true))
-  used_labels, indexes, counts = tf.unique_with_counts(tf.squeeze(roundedOutput))
-  counts = tf.cast(counts, tf.float32)
-  # 1 - counts = quao longe os elementos de counts estão de repetir uma vez só (elemento unico)
-  mse_ones_like = mseLoss(tf.ones_like(counts), counts) 
-  # mseIndexes = loss_object(tf.cast(true_indexes, tf.float32), tf.cast(indexes, tf.float32))
+  def body(i, acc, out):
+    used_labels, indexes, counts = tf.unique_with_counts(out[i])
+    counts = tf.cast(counts, tf.float32)
+    # variance = tf.math.reduce_variance(counts)
+    # return (i + 1, tf.add(acc, variance), out)
+    counts_shape = tf.shape(counts)[0]
+    mse = mseLoss(tf.ones(counts_shape), counts)
+    return (i + 1, tf.add(acc, mse), out)
+  
+  acc = tf.constant(0, dtype=tf.float32)
+  out = roundedOutput
+  batch_size = tf.shape(out)[0]
 
-  variance = tf.math.reduce_variance(counts)
-  return mse_ones_like + variance
+  i = tf.constant(0)
+  condition = lambda i, acc, out: tf.less(i, batch_size)
+  b = body
+  result = tf.while_loop(condition, b, loop_vars=[i, acc, out])
+  return result
 
-def customLoss(true, pred):
+def custom_loss(true, pred):
   mse = mseLoss(true, pred)
   roundedOutput = tf.round(pred)
-  loss_repeated = loss_repeated_labels(roundedOutput)
+  i, loss_repeated, roundedOutput = loss_repeated_labels(roundedOutput)
   return mse + loss_repeated
 
-
+# %%
 data_augmentation = tf.keras.Sequential(
   [
     # layers.RandomFlip("horizontal", input_shape=(32, 32, 3)),
@@ -148,7 +238,7 @@ data_augmentation = tf.keras.Sequential(
 )
 
 model = tf.keras.models.Sequential([
-  data_augmentation,
+  data_augmentation, # with aug mean band = 4.571428571428571, without = 4.603174603174603
   layers.Rescaling(1./255),
   layers.Conv2D(16, 3, padding='same', activation='relu'),
   layers.MaxPooling2D(),
@@ -164,32 +254,49 @@ model = tf.keras.models.Sequential([
   layers.Dense(NUMBER_NODES)
 ])
 
+# %%
+batch_size = int(args.batch)
+
 model.compile(optimizer='adam',
-              loss=customLoss,
+              loss=custom_loss,
               metrics=['accuracy'])
 
 history = model.fit(
     X_train, y_train,
     validation_data=(x_test, y_test),
     epochs=128,
-    batch_size=1
+    batch_size=batch_size,
 )
 
+# %%
+tf.keras.utils.plot_model(
+    model,
+    # to_file='model.png',
+    rankdir='LR',
+    show_shapes=True,
+)
+
+# %%
 plt.plot(history.history['accuracy'], label='accuracy')
 plt.plot(history.history['val_accuracy'], label = 'val_accuracy')
 plt.xlabel('Epoch')
 plt.ylabel('Accuracy')
 plt.legend(loc='lower right')
-plt.savefig('accuracy_9vertices.jpg')
+plt.savefig(f'cnn_customloss_accuracy_{args.name}.jpg')
+plt.clf()
 
+# test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 
+# %%
 plt.plot(history.history['loss'], label='loss')
 plt.plot(history.history['val_loss'], label = 'val_loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend(loc='lower right')
-plt.savefig('loss_9vertices.jpg')
+plt.savefig(f'cnn_customloss_loss_{args.name}.jpg')
+plt.clf()
 
+# %%
 def count_repeats(output):
     counts = np.unique(np.round(output))
     repeated = NUMBER_NODES - counts.shape[0]
@@ -223,6 +330,7 @@ def get_array_from_image(graphnp):
     image_input_np = np.array(resized)
     return image_input_np / 255
 
+# %%
 import time
 
 pred = model.predict(x_test)
@@ -263,6 +371,7 @@ for i in range(len(pred)):
     # print(true_band)
 end = time.time()
 
+# %%
 print('Quantidade de rótulos repetidos, exemplo [1, 1, 1, 1, 1, 1, 1] conta como 6 - ', count)
 print('Quantidade de saídas com repetição, exemplo [1, 1, 1, 1, 1, 1, 1] conta como 1 - ', cases_with_repetition)
 test_length = pred.shape[0]
@@ -275,3 +384,5 @@ print("Pred bandwidth mean±std")
 print(f'{np.mean(sumTest_pred)}±{np.std(sumTest_pred)}')
 print("True bandwidth mean±std")
 print(f'{np.mean(sumTest_true)}±{np.std(sumTest_true)}')
+
+

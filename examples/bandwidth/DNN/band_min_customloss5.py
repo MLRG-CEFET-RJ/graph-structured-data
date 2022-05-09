@@ -10,6 +10,7 @@ import random
 import argparse
 import networkx as nx
 import os
+import time
 
 # %%
 torch.manual_seed(42)
@@ -132,12 +133,13 @@ class CustomLoss(torch.nn.Module):
     
     def __init__(self):
         super(CustomLoss,self).__init__()
+        self.mse = nn.MSELoss()
 
     def loss_repeated_labels(self, roundedOutput):
         batch_size = roundedOutput.shape[0]
 
         used_labels, counts = torch.unique(roundedOutput, return_counts=True)
-        counts = counts.type(torch.DoubleTensor)
+        counts = counts.type(torch.FloatTensor)
 
         counts_shape = counts.shape[0]
         # output_shape = roundedOutput.shape[1]
@@ -145,7 +147,8 @@ class CustomLoss(torch.nn.Module):
         optimalCounts = torch.ones(counts_shape) * batch_size
 
         # return ((counts - optimalCounts)**2).mean() + (output_shape - counts_shape)
-        return ((counts - optimalCounts)**2).mean()
+        # return torch.var(counts, unbiased=False)
+        return self.mse(counts, optimalCounts)
 
     def mse_repeated_labels(self, roundedOutput):
       # computes the MSE of ([2., 1., 1.] - [1., 1., 1.])
@@ -168,13 +171,7 @@ class CustomLoss(torch.nn.Module):
       # sample variance + (shapeItShouldBe - ShapeItIs)**2
       # MSE of ([2., 1., 1.], [1., 1., 1.])
       # how many modifications should be done to avoid repetitions
-      labels = np.arange(NUMBER_NODES)
-      try:
-        roundedOutput = output.round()
-
-      except Exception as e:
-        output_band = 2 * target[0]
-      loss_mse = ((output - target)**2).mean()
+      loss_mse = self.mse(output, target)
 
       roundedOutput = output.round()
       loss_repeated = self.loss_repeated_labels(roundedOutput)
@@ -353,19 +350,19 @@ def get_valid_pred(pred):
         valid[min_idx] = i
     return valid
 
-sumTest_original = 0
-sumTest_pred = 0
-sumTest_true = 0
+sumTest_original = []
+sumTest_pred = []
+sumTest_true = []
 
 count = 0
 at_least_one_repetition = 0
 
 model = NeuralNetwork().to(device)
-path = os.path.join(os.path.dirname(__file__), f'checkpoint5_{args.vertices}nodes_{args.name}.pt')
+path = os.path.join(os.path.dirname(__file__), f'checkpoint5_{args.name}.pt')
 model.load_state_dict(torch.load(path))
 
+start = time.time()
 for x, y in test_dataloader:
-  x, y = x.to(device), y.to(device)
   output = model(x)
 
   x = x.cpu()
@@ -375,7 +372,7 @@ for x, y in test_dataloader:
   for features, pred, target in zip(x, output, y):
     features = features.detach().numpy()
     pred = pred.detach().numpy()
-    target = target.detach().numpy()[1:]
+    target = target.detach().numpy()
 
     print('pred:', np.round(pred))
     print('y:', target)
@@ -389,26 +386,30 @@ for x, y in test_dataloader:
 
     graph = getGraph(features)
     original_band = get_bandwidth(graph, np.array(None))
-    sumTest_original += original_band
+    sumTest_original.append(original_band)
+
     pred_band = get_bandwidth(graph, pred)
-    sumTest_pred += pred_band
+    sumTest_pred.append(pred_band)
+
     true_band = get_bandwidth(graph, target)
-    sumTest_true += true_band
+    sumTest_true.append(true_band)
     print("Bandwidth")
     print(original_band)
     print(pred_band)
     print(true_band)
 
+end = time.time()
 test_length = 0
 for x, y in test_dataloader:
     test_length += y.shape[0]
 
 print('Quantidade de rótulos repetidos, exemplo [1, 1, 1, 1, 1, 1, 1] conta como 6 - ', count)
 print('Quantidade de saídas com repetição, exemplo [1, 1, 1, 1, 1, 1, 1] conta como 1 - ', at_least_one_repetition)
-print("Test length - ", test_length)
-print("Bandwidth mean")
-print(sumTest_original / test_length)
-print("Pred bandwidth mean")
-print(sumTest_pred / test_length)
-print("True bandwidth mean")
-print(sumTest_true / test_length)
+print('Test length - ', test_length)
+print('Tempo medio - ', (end - start) / test_length)
+print("Bandwidth mean±std")
+print(f'{np.mean(sumTest_original)}±{np.std(sumTest_original)}')
+print("Pred bandwidth mean±std")
+print(f'{np.mean(sumTest_pred)}±{np.std(sumTest_pred)}')
+print("True bandwidth mean±std")
+print(f'{np.mean(sumTest_true)}±{np.std(sumTest_true)}')
