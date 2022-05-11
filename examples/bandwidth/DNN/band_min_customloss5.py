@@ -94,12 +94,12 @@ for x, y in train_dataloader:
     break
 
 # %%
-def get_bandwidth_nn_output(Graph, nodelist):
-    Graph = np.array(Graph, dtype=np.int32)
-    Graph = nx.Graph(Graph)
-    L = nx.laplacian_matrix(Graph, nodelist=nodelist.cpu().detach().numpy())
-    x, y = np.nonzero(L)
-    return (x-y).max()
+# def get_bandwidth_nn_output(Graph, nodelist):
+#     Graph = np.array(Graph, dtype=np.int32)
+#     Graph = nx.Graph(Graph)
+#     L = nx.laplacian_matrix(Graph, nodelist=nodelist.cpu().detach().numpy())
+#     x, y = np.nonzero(L)
+#     return (x-y).max()
 
 def getGraph(upperTriangleAdjMatrix):
     dense_adj = np.zeros((NUMBER_NODES, NUMBER_NODES))
