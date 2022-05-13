@@ -26,11 +26,11 @@ class CatBoostRegressor(ModelInterface):
     if not os.path.exists('saved_models'):
       os.makedirs('saved_models')
 
-    model.save_model("saved_models/CatBoostRegressor")
+    model.save_model(os.path.join('saved_models', f'CatBoostRegressor_{self.NUMBER_NODES}_vertices'))
   def predict(self):
     try:
       model = catboost.CatBoostRegressor()
-      model.load_model('saved_models/CatBoostRegressor') 
+      model.load_model(os.path.join('saved_models', f'CatBoostRegressor_{self.NUMBER_NODES}_vertices')) 
 
       x_test, y_test = super().load_test_data(datatype='int32')
 
@@ -71,30 +71,16 @@ class CatBoostRegressor(ModelInterface):
       test_length = pred.shape[0]
       print(test_length)
 
-      CatBoostRegressorResult = np.array([
-        [
-          f'{np.mean(sumTest_original):.2f}±{np.std(sumTest_original):.2f}',
-          f'{np.mean(sumTest_pred):.2f}±{np.std(sumTest_pred):.2f}',
-          f'{np.mean(sumTest_true):.2f}±{np.std(sumTest_true):.2f}',
-          f'{count}',
-          f'{cases_with_repetition}',
-          f'{(end_time - start_time) / test_length:.4f}'
-        ]
-      ])
-
-      df_result = pd.DataFrame(
-        CatBoostRegressorResult,
-        index=['CatBoostRegressor'],
-        columns=[
-          'original bandwidth',
-          'predicted bandwidth',
-          'optimal bandwidth',
-          'Repeated labels',
-          'Predictions with at least one repeated label',
-          'Predicition mean time'
-        ]
+      CatBoostRegressorResult = helper.getResult(
+        model_name='CatBoostRegressor',
+        sumTest_original=sumTest_original,
+        sumTest_pred=sumTest_pred,
+        sumTest_true=sumTest_true,
+        count=count,
+        cases_with_repetition=cases_with_repetition,
+        mean_time=(end_time - start_time) / test_length
       )
-      return df_result
+      return CatBoostRegressorResult
     except FileNotFoundError as e:
       print(e)
       print('Error loading the model from disk, should run model.fit')

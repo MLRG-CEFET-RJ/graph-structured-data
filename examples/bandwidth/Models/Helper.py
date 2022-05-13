@@ -48,7 +48,7 @@ class Helper():
     return dense_adj
     
   def getResult(self, model_name, **kwargs):
-    AdjMatrixCNNResult = np.array([
+    result = np.array([
         [
           f'{np.mean(kwargs["sumTest_original"]):.2f}±{np.std(kwargs["sumTest_original"]):.2f}',
           f'{np.mean(kwargs["sumTest_pred"]):.2f}±{np.std(kwargs["sumTest_pred"]):.2f}',
@@ -60,8 +60,8 @@ class Helper():
       ])
 
     df_result = pd.DataFrame(
-      AdjMatrixCNNResult,
-      index=['CatBoostRegressor'],
+      result,
+      index=[f'{model_name}'],
       columns=[
         'original bandwidth',
         'predicted bandwidth',

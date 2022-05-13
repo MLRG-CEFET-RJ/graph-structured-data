@@ -7,6 +7,7 @@ class ModelInterface(ABC):
     def __init__(self, NUMBER_NODES):
       self.NUMBER_NODES = NUMBER_NODES
       self.features_length = (self.NUMBER_NODES * self.NUMBER_NODES - self.NUMBER_NODES) // 2
+      
     # default method
     def load_train_data(self, datatype):
       train_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{self.NUMBER_NODES}_train.csv'))

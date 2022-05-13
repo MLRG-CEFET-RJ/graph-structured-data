@@ -137,7 +137,7 @@ class AdjMatrixCNN(ModelInterface):
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.legend(loc='lower right')
-    plt.savefig(f'plotted_figures/AdjMatrixCNN_accuracy_{self.NUMBER_NODES}_vertices.jpg')
+    plt.savefig(os.path.join('plotted_figures', f'AdjMatrixCNN_accuracy_{self.NUMBER_NODES}_vertices.jpg'))
     plt.clf()
 
     plt.plot(history.history['loss'], label='loss')
@@ -145,16 +145,22 @@ class AdjMatrixCNN(ModelInterface):
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend(loc='lower right')
-    plt.savefig(f'plotted_figures/AdjMatrixCNN_loss_{self.NUMBER_NODES}_vertices.jpg')
+    plt.savefig(os.path.join('plotted_figures', f'AdjMatrixCNN_loss_{self.NUMBER_NODES}_vertices.jpg'))
     plt.clf()
 
     if not os.path.exists('saved_models'):
       os.makedirs('saved_models')
 
-    model.save('saved_models/AdjMatrixCNN.h5', save_format='h5')
+    model.save(
+      os.path.join('saved_models', f'AdjMatrixCNN_{self.NUMBER_NODES}_vertices.h5'),
+      save_format='h5'
+    )
   def predict(self):
     try:
-      model = load_model('saved_models/AdjMatrixCNN.h5', compile=False)
+      model = load_model(
+        os.path.join('saved_models', f'AdjMatrixCNN_{self.NUMBER_NODES}_vertices.h5'),
+        compile=False
+      )
 
       x_test, y_test = super().load_test_data(datatype='int32')
       helper = HelperEspecialization(self.NUMBER_NODES)
@@ -197,7 +203,7 @@ class AdjMatrixCNN(ModelInterface):
       print(test_length)
 
       AdjMatrixCNNResult = helper.getResult(
-        model_name='AdjMatrixCNNResult',
+        model_name='AdjMatrixCNN',
         sumTest_original=sumTest_original,
         sumTest_pred=sumTest_pred,
         sumTest_true=sumTest_true,
