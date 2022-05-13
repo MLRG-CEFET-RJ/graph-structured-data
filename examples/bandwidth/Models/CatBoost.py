@@ -6,24 +6,28 @@ from ModelInterface import ModelInterface
 from Helper import Helper
 import argparse
 from joblib import dump, load
-from sklearn import tree
+import catboost
 import time
 
-class DecisionTreeClassifier(ModelInterface):
+class CatBoostRegressor(ModelInterface):
   def __init__(self, NUMBER_NODES):
     self.NUMBER_NODES = NUMBER_NODES
     self.features_length = (self.NUMBER_NODES * self.NUMBER_NODES - self.NUMBER_NODES) // 2
 
   def fit(self):
-    model = tree.DecisionTreeClassifier()
+    model = catboost.CatBoostRegressor(objective='MultiRMSE', verbose=100)
 
     x_train, y_train = super().load_train_data(datatype='int32')
+    x_test, y_test = super().load_test_data(datatype='int32')
 
-    model = model.fit(x_train, y_train)
-    dump(model, 'saved_models/DecisionTreeClassifier.joblib') 
+    cat_features = list(range(0, x_test.shape[1]))
+
+    model = model.fit(x_train, y_train, eval_set=(x_test, y_test), cat_features=cat_features, plot=True)
+    model.save_model("saved_models/CatBoostRegressor")
   def predict(self):
     try:
-      model = load('saved_models/DecisionTreeClassifier.joblib') 
+      model = catboost.CatBoostRegressor()
+      model.load_model('saved_models/CatBoostRegressor') 
 
       x_test, y_test = super().load_test_data(datatype='int32')
 
@@ -64,7 +68,7 @@ class DecisionTreeClassifier(ModelInterface):
       test_length = pred.shape[0]
       print(test_length)
 
-      DecisionTreeClassifierResult = np.array([
+      CatBoostRegressorResult = np.array([
         [
           f'{np.mean(sumTest_original):.2f}±{np.std(sumTest_original):.2f}',
           f'{np.mean(sumTest_pred):.2f}±{np.std(sumTest_pred):.2f}',
@@ -76,8 +80,8 @@ class DecisionTreeClassifier(ModelInterface):
       ])
 
       df_result = pd.DataFrame(
-        DecisionTreeClassifierResult,
-        index=['DecisionTreeClassifier'],
+        CatBoostRegressorResult,
+        index=['CatBoostRegressor'],
         columns=[
           'original bandwidth',
           'predicted bandwidth',
@@ -102,10 +106,10 @@ if __name__ == '__main__':
 
   NUMBER_NODES = int(args.vertices)
 
-  decisionTreeClassifier = DecisionTreeClassifier(NUMBER_NODES=NUMBER_NODES)
+  catBoostRegressor = CatBoostRegressor(NUMBER_NODES=NUMBER_NODES)
 
   if args.mode == '0':
-    decisionTreeClassifier.fit()
+    catBoostRegressor.fit()
   if args.mode == '1':
-    df_result = decisionTreeClassifier.predict()
+    df_result = catBoostRegressor.predict()
     print(df_result.to_latex())
