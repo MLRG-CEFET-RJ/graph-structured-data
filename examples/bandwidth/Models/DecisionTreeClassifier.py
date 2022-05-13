@@ -11,6 +11,7 @@ import time
 
 class DecisionTreeClassifier(ModelInterface):
   def __init__(self, NUMBER_NODES):
+    super().__init__(NUMBER_NODES)
     self.NUMBER_NODES = NUMBER_NODES
     self.features_length = (self.NUMBER_NODES * self.NUMBER_NODES - self.NUMBER_NODES) // 2
 
@@ -20,6 +21,10 @@ class DecisionTreeClassifier(ModelInterface):
     x_train, y_train = super().load_train_data(datatype='int32')
 
     model = model.fit(x_train, y_train)
+
+    if not os.path.exists('saved_models'):
+      os.makedirs('saved_models')
+
     dump(model, 'saved_models/DecisionTreeClassifier.joblib') 
   def predict(self):
     try:

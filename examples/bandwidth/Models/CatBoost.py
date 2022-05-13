@@ -1,16 +1,15 @@
 import numpy as np
-import os
 import pandas as pd
-import networkx as nx
 from ModelInterface import ModelInterface
 from Helper import Helper
 import argparse
-from joblib import dump, load
 import catboost
 import time
+import os
 
 class CatBoostRegressor(ModelInterface):
   def __init__(self, NUMBER_NODES):
+    super().__init__(NUMBER_NODES)
     self.NUMBER_NODES = NUMBER_NODES
     self.features_length = (self.NUMBER_NODES * self.NUMBER_NODES - self.NUMBER_NODES) // 2
 
@@ -23,6 +22,10 @@ class CatBoostRegressor(ModelInterface):
     cat_features = list(range(0, x_test.shape[1]))
 
     model = model.fit(x_train, y_train, eval_set=(x_test, y_test), cat_features=cat_features, plot=True)
+
+    if not os.path.exists('saved_models'):
+      os.makedirs('saved_models')
+
     model.save_model("saved_models/CatBoostRegressor")
   def predict(self):
     try:

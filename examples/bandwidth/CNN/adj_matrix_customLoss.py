@@ -232,8 +232,8 @@ def custom_loss(true, pred):
 # %%
 data_augmentation = tf.keras.Sequential(
   [
-    # layers.RandomFlip("horizontal", input_shape=(32, 32, 3)),
     layers.RandomRotation(0.2),
+    layers.RandomContrast(0.2),
   ]
 )
 
