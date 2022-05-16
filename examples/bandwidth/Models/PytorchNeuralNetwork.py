@@ -6,7 +6,6 @@ from ModelInterface import ModelInterface
 import torch.optim as optim
 from Helper import Helper
 import argparse
-from joblib import dump, load
 import matplotlib.pyplot as plt
 import time
 import torch
@@ -179,8 +178,7 @@ class PytorchNeuralNetwork(ModelInterface):
       for x, y in dataloader:
           pred = model(x)
 
-          criterion = CustomLoss()
-          loss = criterion(pred, y)
+          loss = self.criterion(pred, y)
 
           eval_loss += loss.item()
     return (eval_loss / len(dataloader))

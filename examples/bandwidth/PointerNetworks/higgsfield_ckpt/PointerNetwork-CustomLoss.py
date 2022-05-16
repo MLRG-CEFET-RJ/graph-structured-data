@@ -114,7 +114,7 @@ tanh_exploration = 10
 
 class Attention(nn.Module):
     # def __init__(self, hidden_size, use_tanh=False, C=10, use_cuda=USE_CUDA):
-    def __init__(self, hidden_size, use_tanh=False, C=FEATURES_NUMBER, use_cuda=USE_CUDA):
+    def __init__(self, hidden_size, use_tanh=False, C=NUMBER_NODES, use_cuda=USE_CUDA):
         super(Attention, self).__init__()
         
         self.use_tanh = use_tanh
@@ -199,59 +199,26 @@ class PointerNetLossOutside(nn.Module):
         softmax = nn.Softmax(dim=1)
 
         logits = softmax(item_tuple[0])
-        true = item_tuple[1]
+        true = item_tuple[1].numpy()
 
-        argmax_indices = torch.argmax(softmax(logits), dim=1)
+        argmax_indices = torch.argmax(logits, dim=1)
         for i in argmax_indices:
             sequence.append(i)
 
-        sequence = torch.tensor(sequence)
+        sequence = np.array(sequence)
         return sequence, true
 
     def verticalSequence_to_horizontalSequence(self, verticalSequence):
-        pred_batch = []
-        true_batch = []
-        for stackedPred, stackedTrue in verticalSequence:
-            if isinstance(stackedPred, torch.Tensor):
-              stackedPred = stackedPred.cpu()
-            if isinstance(stackedTrue, torch.Tensor):
-              stackedTrue = stackedTrue.cpu()
-            pred_batch.append(list(stackedPred.numpy()))
-            true_batch.append(list(stackedTrue.numpy()))
-
-        pred_batch = torch.tensor(pred_batch)
-        pred_batch = pred_batch.permute(1, 0)
-
-        true_batch = torch.tensor(true_batch)
-        true_batch = true_batch.permute(1, 0)
-
-        data = []
-
-        for pred, true in zip(pred_batch, true_batch):
-            data.append((pred, true))
-        return data
+        horizontalSquence = torch.tensor(verticalSequence, dtype=torch.float32)
+        return horizontalSquence.permute(2, 1, 0)
 
     def verticalSequence_to_horizontalSequence_splitted(self, verticalSequence):
-        pred_batch = []
-        true_batch = []
-        for stackedPred, stackedTrue in verticalSequence:
-            if isinstance(stackedPred, torch.Tensor):
-              stackedPred = stackedPred.cpu()
-            if isinstance(stackedTrue, torch.Tensor):
-              stackedTrue = stackedTrue.cpu()
-            pred_batch.append(list(stackedPred.numpy()))
-            true_batch.append(list(stackedTrue.numpy()))
-
-        pred_batch = torch.tensor(pred_batch)
-        pred_batch = pred_batch.permute(1, 0)
-
-        true_batch = torch.tensor(true_batch)
-        true_batch = true_batch.permute(1, 0)
-
-        pred_batch = pred_batch.type(torch.FloatTensor)
-        true_batch = true_batch.type(torch.FloatTensor)
-
-        return pred_batch, true_batch
+        horizontalSquence = torch.tensor(verticalSequence, dtype=torch.float32)
+        permuted = horizontalSquence.permute(2, 1, 0)
+        pred, true = torch.tensor_split(permuted, 2, dim=1)
+        pred = torch.squeeze(pred)
+        true = torch.squeeze(true)
+        return pred, true
 
     def loss_repeated_labels(self, sequenceOutput):
       batch_size = sequenceOutput.shape[0]
@@ -439,13 +406,13 @@ def list_of_tuple_with_logits_true_to_verticalSequence(item_tuple):
   sequence = []
 
   logits = softmax(item_tuple[0])
-  true = item_tuple[1]
+  true = item_tuple[1].numpy()
 
-  argmax_indices = torch.argmax(softmax(logits), dim=1)
+  argmax_indices = torch.argmax(logits, dim=1)
   for i in argmax_indices:
     sequence.append(i)
 
-  sequence = torch.tensor(sequence)
+  sequence = np.array(sequence)
   return sequence, true
 
 # this function is also in PointerNetLossOutside, repeated on purpose for visualize the returned data
