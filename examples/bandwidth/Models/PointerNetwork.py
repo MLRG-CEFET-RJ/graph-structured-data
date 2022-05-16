@@ -336,8 +336,8 @@ class PointerNetwork(ModelInterface):
     self.epochs = epochs
 
   def load_train_data(self):
-    train_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_train.csv'))
-    val_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_val.csv'))
+    train_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{self.NUMBER_NODES}_train.csv'))
+    val_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{self.NUMBER_NODES}_val.csv'))
 
     train_df = pd.concat((train_df, val_df))
 
@@ -356,7 +356,7 @@ class PointerNetwork(ModelInterface):
     return train_dataset
 
   def load_test_data(self):
-    test_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_test.csv'))
+    test_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{self.NUMBER_NODES}_test.csv'))
 
     def get_tuple_tensor_dataset(row):
         X = row[0 : self.features_length].astype('int32')
@@ -546,7 +546,7 @@ class PointerNetwork(ModelInterface):
       print('Error loading the model from disk, should run model.fit')
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description='Pytorch - Deep learning custom loss')
+  parser = argparse.ArgumentParser(description='Pytorch - Pointer Network')
   parser.add_argument('-v','--vertices', help='number of vertices dataset [7, 9]', required=True)
   parser.add_argument('-m','--mode', help='0 - fit, 1 - predict', required=True)
   parser.add_argument('-b','--batch', help="batch_size - 32, 64, 128, 256, ...", required=True)

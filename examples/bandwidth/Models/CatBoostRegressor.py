@@ -88,7 +88,7 @@ class CatBoostRegressor(ModelInterface):
     
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description='Pytorch - Deep learning custom loss')
+  parser = argparse.ArgumentParser(description='Catboost - Gradient boosting on decision trees')
   parser.add_argument('-v','--vertices', help='number of vertices dataset [7, 9]', required=True)
   parser.add_argument('-m','--mode', help=r'{0: fit, 1: predict}', required=True)
   args = parser.parse_args()

@@ -40,7 +40,7 @@ class DeviceDataLoader():
         return len(self.dl)
 
 class NeuralNetwork(nn.Module):
-  def __init__(self):
+  def __init__(self, NUMBER_NODES):
       super(NeuralNetwork, self).__init__()
       self.fc1 = nn.Linear(((NUMBER_NODES * NUMBER_NODES - NUMBER_NODES) // 2 ), 128)
       self.fc2 = nn.Linear(128, NUMBER_NODES)
@@ -131,8 +131,8 @@ class PytorchNeuralNetwork(ModelInterface):
     self.criterion = CustomLoss()
 
   def load_train_data(self):
-    train_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_train.csv'))
-    val_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_val.csv'))
+    train_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{self.NUMBER_NODES}_train.csv'))
+    val_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{self.NUMBER_NODES}_val.csv'))
 
     train_df = pd.concat((train_df, val_df))
 
@@ -145,7 +145,7 @@ class PytorchNeuralNetwork(ModelInterface):
     return train_dataset
 
   def load_test_data(self):
-    test_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_test.csv'))
+    test_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{self.NUMBER_NODES}_test.csv'))
 
     def get_tuple_tensor_dataset(row):
         X = row[0 : self.features_length].astype('float32')
@@ -197,7 +197,7 @@ class PytorchNeuralNetwork(ModelInterface):
     train_dataloader = DeviceDataLoader(train_dataloader, self.device)
     test_dataloader = DeviceDataLoader(test_dataloader, self.device)
 
-    model = NeuralNetwork().to(self.device)
+    model = NeuralNetwork(self.NUMBER_NODES).to(self.device)
     optimizer = optim.SGD(model.parameters(), lr=0.0001)
 
     list_train_loss = []
@@ -242,7 +242,7 @@ class PytorchNeuralNetwork(ModelInterface):
       self.device = get_default_device()
       print(f"Using {self.device} device")
 
-      model = NeuralNetwork().to(self.device)
+      model = NeuralNetwork(self.NUMBER_NODES).to(self.device)
       path = os.path.join('saved_models', f'PytorchNeuralNetwork_{self.NUMBER_NODES}_vertices.pt')
       model.load_state_dict(torch.load(path))
 

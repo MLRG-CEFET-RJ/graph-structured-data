@@ -1,5 +1,4 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 from tensorflow.keras import layers
 import matplotlib.pyplot as plt
@@ -105,7 +104,7 @@ class AdjMatrixCNN(ModelInterface):
       layers.Dropout(0.3),
       layers.Flatten(),
       layers.Dense(128, activation='relu'),
-      layers.Dense(NUMBER_NODES)
+      layers.Dense(self.NUMBER_NODES)
     ])
 
     batch_size = self.batch_size
@@ -217,7 +216,7 @@ class AdjMatrixCNN(ModelInterface):
       print('Error loading the model from disk, should run model.fit')
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description='Pytorch - Deep learning custom loss')
+  parser = argparse.ArgumentParser(description='Tensorflow - Convolutional Neural Network')
   parser.add_argument('-v','--vertices', help='number of vertices dataset [7, 9]', required=True)
   parser.add_argument('-m','--mode', help='0 - fit, 1 - predict', required=True)
   parser.add_argument('-b','--batch', help="batch_size - 32, 64, 128, 256, ...", required=True)
