@@ -11,14 +11,12 @@ import time
 
 class DecisionTreeClassifier(ModelInterface):
   def __init__(self, NUMBER_NODES):
-    super().__init__(NUMBER_NODES)
     self.NUMBER_NODES = NUMBER_NODES
-    self.features_length = (self.NUMBER_NODES * self.NUMBER_NODES - self.NUMBER_NODES) // 2
 
   def fit(self):
     model = tree.DecisionTreeClassifier()
 
-    x_train, y_train = super().load_train_data(datatype='int32')
+    x_train, y_train = super().load_train_data(datatype='int32', NUMBER_NODES=self.NUMBER_NODES)
 
     model = model.fit(x_train, y_train)
 
@@ -30,7 +28,7 @@ class DecisionTreeClassifier(ModelInterface):
     try:
       model = load(os.path.join('saved_models', f'DecisionTreeClassifier_{self.NUMBER_NODES}_vertices.joblib')) 
 
-      x_test, y_test = super().load_test_data(datatype='int32')
+      x_test, y_test = super().load_test_data(datatype='int32', NUMBER_NODES=self.NUMBER_NODES)
 
       pred = model.predict(x_test)
 

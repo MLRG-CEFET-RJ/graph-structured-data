@@ -4,20 +4,18 @@ import os
 import numpy as np
 
 class ModelInterface(ABC):
-    def __init__(self, NUMBER_NODES):
-      self.NUMBER_NODES = NUMBER_NODES
-      self.features_length = (self.NUMBER_NODES * self.NUMBER_NODES - self.NUMBER_NODES) // 2
-      
     # default method
-    def load_train_data(self, datatype):
-      train_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{self.NUMBER_NODES}_train.csv'))
-      val_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{self.NUMBER_NODES}_val.csv'))
+    def load_train_data(self, datatype, NUMBER_NODES):
+      features_length = (NUMBER_NODES * NUMBER_NODES - NUMBER_NODES) // 2
+
+      train_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_train.csv'))
+      val_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_val.csv'))
       
       train_df = pd.concat((train_df, val_df))
 
       def get_tuple_tensor_dataset(row):
-          X = row[0 : self.features_length].astype(datatype)
-          Y = row[self.features_length + 1: ].astype(datatype) # Pula a banda otima na posicao 0
+          X = row[0 : features_length].astype(datatype)
+          Y = row[features_length + 1: ].astype(datatype) # Pula a banda otima na posicao 0
           return X, Y
 
       train_dataset = list(map(get_tuple_tensor_dataset, train_df.to_numpy()))
@@ -33,12 +31,14 @@ class ModelInterface(ABC):
       return x_train, y_train
 
     # default method
-    def load_test_data(self, datatype):
-      test_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{self.NUMBER_NODES}_test.csv'))
+    def load_test_data(self, datatype, NUMBER_NODES):
+      features_length = (NUMBER_NODES * NUMBER_NODES - NUMBER_NODES) // 2
+      
+      test_df = pd.read_csv(os.path.join('..', 'datasets', f'dataset_{NUMBER_NODES}_test.csv'))
 
       def get_tuple_tensor_dataset(row):
-          X = row[0 : self.features_length].astype(datatype)
-          Y = row[self.features_length + 1: ].astype(datatype) # Pula a banda otima na posicao 0
+          X = row[0 : features_length].astype(datatype)
+          Y = row[features_length + 1: ].astype(datatype) # Pula a banda otima na posicao 0
           return X, Y
 
       test_dataset = list(map(get_tuple_tensor_dataset, test_df.to_numpy()))
@@ -58,5 +58,5 @@ class ModelInterface(ABC):
       pass
 
     @abstractmethod
-    def predict(self, x_test):
+    def predict(self):
       pass

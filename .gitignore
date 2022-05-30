@@ -29,6 +29,14 @@ examples/bandwidth/PointerNetworks/*
 !examples/bandwidth/PointerNetworks/higgsfield_ckpt
 examples/bandwidth/NMT/
 
+# DTrees
+examples/bandwidth/DTrees/catboost_info
+
+# Models
+examples/bandwidth/Models/catboost_info
+examples/bandwidth/Models/saved_models/
+examples/bandwidth/Models/plotted_figures/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -10,11 +10,11 @@ import numpy as np
 import time
 from tensorflow.keras.models import load_model
 
-class HelperEspecialization(Helper):
+class CNNHelper(Helper):
   def __init__(self, NUMBER_NODES):
     super().__init__(NUMBER_NODES)
 
-  def process_data_to_image(self, graphInput):
+  def process_data_to_image_np_array(self, graphInput):
     adj = super().getGraph(graphInput)
     w, h = self.NUMBER_NODES, self.NUMBER_NODES
     data = np.zeros((h, w, 3), dtype=np.uint8)
@@ -27,12 +27,12 @@ class HelperEspecialization(Helper):
     image_input_np = np.array(resized)
     return image_input_np
 
-  def get_image_data(self, features, labels):
+  def get_image_dataset(self, features, labels):
       train_images = []
       train_nodelist = []
       for graphInput, target in zip(features, labels):
           graphNodeList = target
-          x_image = self.process_data_to_image(graphInput)
+          x_image = self.process_data_to_image_np_array(graphInput)
           train_images.append(x_image)
           train_nodelist.append(graphNodeList)
       return np.array(train_images), np.array(train_nodelist)
@@ -77,7 +77,6 @@ class LossRepeatedLabels(tf.keras.losses.Loss):
 
 class AdjMatrixCNN(ModelInterface):
   def __init__(self, NUMBER_NODES, batch_size, epochs):
-    super().__init__(NUMBER_NODES)
     self.NUMBER_NODES = NUMBER_NODES
     self.batch_size = batch_size
     self.epochs = epochs
@@ -107,19 +106,17 @@ class AdjMatrixCNN(ModelInterface):
       layers.Dense(self.NUMBER_NODES)
     ])
 
-    batch_size = self.batch_size
-
     model.compile(optimizer='adam',
                   loss=LossRepeatedLabels(),
                   metrics=['accuracy'])
 
-    x_train, y_train = super().load_train_data(datatype='int32')
-    x_test, y_test = super().load_test_data(datatype='int32')
+    x_train, y_train = super().load_train_data(datatype='int32', NUMBER_NODES=self.NUMBER_NODES)
+    x_test, y_test = super().load_test_data(datatype='int32', NUMBER_NODES=self.NUMBER_NODES)
 
-    helper = HelperEspecialization(self.NUMBER_NODES)
+    helper = CNNHelper(self.NUMBER_NODES)
 
-    x_train, y_train = helper.get_image_data(x_train, y_train)
-    x_test, y_test = helper.get_image_data(x_test, y_test)
+    x_train, y_train = helper.get_image_dataset(x_train, y_train)
+    x_test, y_test = helper.get_image_dataset(x_test, y_test)
 
     history = model.fit(
         x_train, y_train,
@@ -162,8 +159,8 @@ class AdjMatrixCNN(ModelInterface):
       )
 
       x_test, y_test = super().load_test_data(datatype='int32')
-      helper = HelperEspecialization(self.NUMBER_NODES)
-      x_test, y_test = helper.get_image_data(x_test, y_test)
+      helper = CNNHelper(self.NUMBER_NODES)
+      x_test, y_test = helper.get_image_dataset(x_test, y_test)
 
       pred = model.predict(x_test)
 

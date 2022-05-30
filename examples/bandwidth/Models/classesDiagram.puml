@@ -1,0 +1,150 @@
+@startuml class
+
+interface ModelInterface {
+  - load_train_data() : tuple
+  - load_test_data(): tuple
+  - fit(): void
+  - predict(): DataFrame
+}
+
+class Helper {
+  - NUMBER_NODES: int
+
+  - count_repeats(): int
+  - get_valid_pred(): NDArray
+  - get_bandwidth(): int
+  - getGraph(): NDArray
+  - getResult(): DataFrame
+}
+
+class CNNHelperSpecialization extends Helper {
+  - helperImage(): void
+  - process_data_to_image(): NDArray
+  - get_image_dataset(): tuple
+  - get_matrix_from_image(): NDArray
+}
+
+class PointerNetHelperSpecialization extends Helper {
+  - get_valid_pred(): NDArray
+  - list_of_tuple_of_logits_with_true_to_sequences(): tuple
+}
+
+class DeviceDataLoader {
+  - __iter__(): void
+  - __len__(): int
+}
+
+class EarlyStopping {
+  - patience: int
+  - verbose: boolean
+  - count: int
+  - best_score: double
+  - early_stop: boolean
+  - early_stop: double
+  - delta: int
+  - NUMBER_NODES: int
+
+  - __call__(): void
+  - save_checkpoint(): void
+}
+
+class Attention {
+  - use_tanh: boolean
+  - W_query: Linear
+  - W_ref: Conv1d
+  - C: int
+
+  - forward(): tuple
+}
+
+class PointerNet {
+  - apply_mask_to_logits(): tuple
+  - list_of_tuple_with_logits_true_to_verticalSequence(): tuple
+  - verticalSequence_to_horizontalSequence(): tuple
+  - verticalSequence_to_horizontalSequence_splitted(): tuple
+  - loss_repeated_labels(): double
+  - forward(): tuple
+}
+
+
+class LossRepeatedLabels {
+  - loss_repeated_labels(): tuple
+  - call(): double
+}
+
+class CustomLoss {
+  - loss_repeated_labels(): tuple
+  - forward(): double
+}
+
+class DecisionTreeClassifier implements ModelInterface {
+  - number_nodes: int
+
+  - fit(): void
+  - predict(): DataFrame
+}
+
+class CatBoostRegressor implements ModelInterface {
+  - number_nodes: int
+
+  - fit(): void
+  - predict(): DataFrame
+}
+
+class AdjMatrixCNN implements ModelInterface {
+  - number_nodes: int
+  - batch_size: int
+  - epochs: int
+  - fit(): void
+  - predict(): DataFrame
+}
+
+class PytorchNeuralNetwork implements ModelInterface {
+  - number_nodes: int
+  - features_length: int
+  - batch_size: int
+  - epochs: int
+
+  - load_train_data() : list
+  - load_test_data() : list
+  - train() : double
+  - validate() : double
+  - fit(): void
+  - predict(): DataFrame
+}
+
+class PointerNetwork implements ModelInterface {
+  - number_nodes: int
+  - features_length: int
+  - batch_size: int
+  - epochs: int
+
+  - load_train_data() : list
+  - load_test_data() : list
+  - train() : double
+  - validate() : double
+  - get_predicts() : list
+  - fit(): void
+  - predict(): DataFrame
+}
+
+DecisionTreeClassifier "1" -- "1" Helper
+
+CatBoostRegressor "1" -- "1" Helper
+
+AdjMatrixCNN "1" -- "1" CNNHelperSpecialization
+AdjMatrixCNN "1" -- "1" CustomLoss
+
+PytorchNeuralNetwork "1" -- "1" Helper
+PytorchNeuralNetwork "1" -- "1" CustomLoss
+PytorchNeuralNetwork "1" -- "1" EarlyStopping
+PytorchNeuralNetwork "1" -- "1" DeviceDataLoader
+
+PointerNetwork "1" -- "1" PointerNetHelperSpecialization
+PointerNetwork "1" -- "1" EarlyStopping
+PointerNetwork "1" -- "1" DeviceDataLoader
+PointerNetwork "1" -- "1" PointerNet
+PointerNetwork "1" -- "1" CustomLoss
+PointerNet "1" -- "1..*" Attention
+
+@enduml

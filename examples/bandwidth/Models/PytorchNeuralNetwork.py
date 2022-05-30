@@ -123,7 +123,6 @@ class EarlyStopping:
 
 class PytorchNeuralNetwork(ModelInterface):
   def __init__(self, NUMBER_NODES, batch_size, epochs):
-    super().__init__(NUMBER_NODES)
     self.NUMBER_NODES = NUMBER_NODES
     self.features_length = (self.NUMBER_NODES * self.NUMBER_NODES - self.NUMBER_NODES) // 2
     self.batch_size = batch_size

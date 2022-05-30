@@ -29,7 +29,7 @@ def to_device(data, device):
         return [to_device(x, device) for x in data]
     return data.to(device, non_blocking=True)
 
-class HelperSpecialization(Helper):
+class PointerNetHelper(Helper):
   def __init__(self, NUMBER_NODES):
     super().__init__(NUMBER_NODES)
 
@@ -190,6 +190,27 @@ class Attention(nn.Module):
             logits = logits  
         return ref, logits
 
+class CustomLoss():
+  def __init__(self):
+    self.mse = nn.MSELoss()
+
+  def loss_repeated_labels(self, sequenceOutput):
+    batch_size = sequenceOutput.shape[0]
+
+    used_labels, counts = torch.unique(sequenceOutput, return_counts=True)
+    counts = counts.type(torch.FloatTensor)
+
+    counts_shape = counts.shape[0]
+
+    optimalCounts = torch.ones(counts_shape) * batch_size
+
+    return self.mse(counts, optimalCounts)
+
+  def __call__(self, pred, true):
+     mse = self.mse(pred, true)
+     loss_repeated = self.loss_repeated_labels(pred)
+     return mse + loss_repeated
+
 class PointerNet(nn.Module):
     def __init__(self, 
             embedding_size,
@@ -220,7 +241,7 @@ class PointerNet(nn.Module):
         self.decoder_start_input.data.uniform_(-(1. / math.sqrt(embedding_size)), 1. / math.sqrt(embedding_size))
         
         self.criterion = nn.CrossEntropyLoss()
-        self.mse = nn.MSELoss()
+        self.customLoss = CustomLoss()
         
     def apply_mask_to_logits(self, logits, mask, idxs): 
         batch_size = logits.size(0)
@@ -256,18 +277,6 @@ class PointerNet(nn.Module):
         pred = torch.squeeze(pred)
         true = torch.squeeze(true)
         return pred, true
-
-    def loss_repeated_labels(self, sequenceOutput):
-      batch_size = sequenceOutput.shape[0]
-
-      used_labels, counts = torch.unique(sequenceOutput, return_counts=True)
-      counts = counts.type(torch.FloatTensor)
-
-      counts_shape = counts.shape[0]
-
-      optimalCounts = torch.ones(counts_shape) * batch_size
-
-      return self.mse(counts, optimalCounts)
     
     def forward(self, inputs, target):
         """
@@ -320,16 +329,12 @@ class PointerNet(nn.Module):
 
         verticalSequences = np.array(list(map(self.list_of_tuple_with_logits_true_to_verticalSequence, output)))
         pred_sequences, true_sequences = self.verticalSequence_to_horizontalSequence_splitted(verticalSequences)
-
-        mse = self.mse(pred_sequences, true_sequences)
-        loss_repeated = self.loss_repeated_labels(pred_sequences)
-        custom_loss = mse + loss_repeated
+        custom_loss = self.customLoss(pred_sequences, true_sequences)
 
         return output, loss_output + custom_loss
 
 class PointerNetwork(ModelInterface):
   def __init__(self, NUMBER_NODES, batch_size, epochs):
-    super().__init__(NUMBER_NODES)
     self.NUMBER_NODES = NUMBER_NODES
     self.features_length = (self.NUMBER_NODES * self.NUMBER_NODES - self.NUMBER_NODES) // 2
     self.batch_size = batch_size
@@ -469,7 +474,7 @@ class PointerNetwork(ModelInterface):
 
   def predict(self):
     try:
-      helper = HelperSpecialization(self.NUMBER_NODES)
+      helper = PointerNetHelper(self.NUMBER_NODES)
       self.device = get_default_device()
       print(f"Using {self.device} device")
 
