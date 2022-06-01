@@ -158,7 +158,7 @@ class AdjMatrixCNN(ModelInterface):
         compile=False
       )
 
-      x_test, y_test = super().load_test_data(datatype='int32')
+      x_test, y_test = super().load_test_data(datatype='int32', NUMBER_NODES=self.NUMBER_NODES)
       helper = CNNHelper(self.NUMBER_NODES)
       x_test, y_test = helper.get_image_dataset(x_test, y_test)
 
