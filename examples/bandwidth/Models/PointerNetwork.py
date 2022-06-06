@@ -470,20 +470,14 @@ class PointerNetwork(ModelInterface):
       val_loss.append(epoch_val_loss)
       print(f'Epoch {epoch + 1}, train_loss: {epoch_train_loss}, val_loss: {epoch_val_loss}')
 
-      # valid_loss = np.average(epoch_val_loss)
-      # early_stopping(valid_loss, model)
-      # if early_stopping.early_stop:
-      #     print("Early stopping")
-      #     break
+      valid_loss = np.average(val_loss)
+      early_stopping(valid_loss, model)
+      if early_stopping.early_stop:
+          print("Early stopping")
+          break
 
     train_dataloader = None
     test_dataloader = None
-
-    if not os.path.exists('saved_models'):
-      os.makedirs('saved_models')
-
-    path = os.path.join('saved_models', f'PointerNetwork_{self.NUMBER_NODES}_vertices.pt')
-    torch.save(model.state_dict(), path)
 
     if not os.path.exists('plotted_figures'):
       os.makedirs('plotted_figures')
