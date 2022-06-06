@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import time
 import torch
 from torch.utils.data import DataLoader
+import networkx as nx
 
 def get_default_device():
   """Pick GPU if available, else CPU"""
@@ -193,6 +194,9 @@ class PytorchNeuralNetwork(ModelInterface):
     self.device = get_default_device()
     print(f"Using {self.device} device")
 
+    train_data = None
+    test_data = None
+
     train_dataloader = DeviceDataLoader(train_dataloader, self.device)
     test_dataloader = DeviceDataLoader(test_dataloader, self.device)
 
@@ -223,6 +227,9 @@ class PytorchNeuralNetwork(ModelInterface):
           print("Early stopping")
           break
 
+    train_dataloader = None
+    test_dataloader = None
+
     if not os.path.exists('plotted_figures'):
       os.makedirs('plotted_figures')
 
@@ -248,6 +255,7 @@ class PytorchNeuralNetwork(ModelInterface):
       BATCH_SIZE =  self.batch_size
       test_data = self.load_test_data()
       test_dataloader = DataLoader(test_data, batch_size=BATCH_SIZE, shuffle=False)
+      test_data = None
       test_dataloader = DeviceDataLoader(test_dataloader, self.device)
 
       sumTest_original = []
@@ -268,7 +276,7 @@ class PytorchNeuralNetwork(ModelInterface):
         for features, pred, target in zip(x, output, y):
           features = features.detach().numpy()
           pred = pred.detach().numpy()
-          target = target.detach().numpy()
+          target = target.cpu().numpy()
 
           quantity_repeated = helper.count_repeats(pred)
 
@@ -279,6 +287,8 @@ class PytorchNeuralNetwork(ModelInterface):
           pred = helper.get_valid_pred(pred)
 
           graph = helper.getGraph(features)
+          graph = nx.Graph(graph)
+
           original_band = helper.get_bandwidth(graph, np.array(None))
           sumTest_original.append(original_band)
 
@@ -293,6 +303,7 @@ class PytorchNeuralNetwork(ModelInterface):
       for x, y in test_dataloader:
         test_length += y.shape[0]
       print(test_length)
+      test_dataloader = None
 
       PytorchNeuralNetworkResult = helper.getResult(
         model_name='PytorchNeuralNetwork',

@@ -5,6 +5,7 @@ import time
 
 import pandas as pd
 import numpy as np
+import networkx as nx
 
 import matplotlib.pyplot as plt
 import torch
@@ -36,12 +37,16 @@ class PointerNetHelper(Helper):
   def get_valid_pred(self, pred):
     valid = np.ones(self.NUMBER_NODES)
     labels = np.arange(0, self.NUMBER_NODES)
+    pred = list(map(lambda x: x.cpu(), pred))
     for i in labels:
         min_value = np.amin(pred)
         min_idx, = np.where(pred == min_value)
         min_idx = min_idx[0]
         pred[min_idx] = 100
         valid[min_idx] = i
+    valid = None
+    labels = None
+    pred = None
     return valid
 
   def list_of_tuple_of_logits_with_true_to_sequences(self, pred):
@@ -84,8 +89,13 @@ class PointerNetHelper(Helper):
             appended = True
       pred_sequences.append(pred_sequence)
 
+    logits_sequences = None
+
     for batch_id in true_sequences:
       target_sequences.append(true_sequences[batch_id])
+
+    true_sequences = None
+
     return pred_sequences, target_sequences, quantity_repeated, cases_with_repetition
 
 class DeviceDataLoader():
@@ -257,10 +267,11 @@ class PointerNet(nn.Module):
         softmax = nn.Softmax(dim=1)
 
         logits = softmax(item_tuple[0])
-        true = item_tuple[1].numpy()
+        true = item_tuple[1].cpu().numpy()
 
         argmax_indices = torch.argmax(logits, dim=1)
-        for i in argmax_indices:
+        logits = None
+        for i in argmax_indices.cpu().numpy():
             sequence.append(i)
 
         sequence = np.array(sequence)
@@ -274,6 +285,10 @@ class PointerNet(nn.Module):
         horizontalSquence = torch.tensor(verticalSequence, dtype=torch.float32)
         permuted = horizontalSquence.permute(2, 1, 0)
         pred, true = torch.tensor_split(permuted, 2, dim=1)
+
+        horizontalSquence = None
+        permuted = None
+
         pred = torch.squeeze(pred)
         true = torch.squeeze(true)
         return pred, true
@@ -312,8 +327,7 @@ class PointerNet(nn.Module):
                 ref, logits = self.glimpse(query, encoder_outputs)
                 logits, mask = self.apply_mask_to_logits(logits, mask, idxs)
                 # even without the line above, the model make 5 zeros for the last 5 logits
-                query = torch.bmm(ref, F.softmax(logits, dim=1).unsqueeze(2)).squeeze(2) 
-                
+                query = torch.bmm(ref, F.softmax(logits, dim=1).unsqueeze(2)).squeeze(2)    
                 
             _, logits = self.pointer(query, encoder_outputs)
             logits, mask = self.apply_mask_to_logits(logits, mask, idxs)
@@ -404,10 +418,11 @@ class PointerNetwork(ModelInterface):
   def get_predicts(self, test_dataloader, model):
     preds = []
     model.eval()
-    for x, y in test_dataloader:
-      logits_with_target_of_a_sequence, loss_output = model(x, y)
-
-      preds.append((x, logits_with_target_of_a_sequence))
+    # it doesn't need to calculate gradients
+    with torch.no_grad():
+        for x, y in test_dataloader:
+            logits_with_target_of_a_sequence, loss_output = model(x, y)
+            preds.append((x, logits_with_target_of_a_sequence))
     return preds
 
   def fit(self):
@@ -422,6 +437,10 @@ class PointerNetwork(ModelInterface):
     self.device = get_default_device()
     print(f"Using {self.device} device")
 
+    train_data = None
+    test_data = None
+    # helps garbage colleciton
+    
     train_dataloader = DeviceDataLoader(train_dataloader, self.device)
     test_dataloader = DeviceDataLoader(test_dataloader, self.device)
 
@@ -460,6 +479,9 @@ class PointerNetwork(ModelInterface):
           print("Early stopping")
           break
 
+    train_dataloader = None
+    test_dataloader = None
+
     if not os.path.exists('plotted_figures'):
       os.makedirs('plotted_figures')
 
@@ -495,9 +517,13 @@ class PointerNetwork(ModelInterface):
       BATCH_SIZE =  self.batch_size
       test_data = self.load_test_data()
       test_dataloader = DataLoader(test_data, batch_size=BATCH_SIZE, shuffle=False)
+      
+      test_data = None
+
       test_dataloader = DeviceDataLoader(test_dataloader, self.device)
 
       preds = self.get_predicts(test_dataloader, model)
+      test_dataloader = None
 
       sumTest_original = []
       sumTest_pred = []
@@ -517,6 +543,8 @@ class PointerNetwork(ModelInterface):
           output = helper.get_valid_pred(output)
 
           graph = helper.getGraph(x)
+          graph = nx.Graph(graph)
+
           original_band = helper.get_bandwidth(graph, np.array(None))
           sumTest_original.append(original_band)
 
@@ -532,6 +560,7 @@ class PointerNetwork(ModelInterface):
       test_length = 0
       for i in preds:
         test_length += i[0].shape[0]
+      preds = None
       print(test_length)
 
       PointerNetworkResult = helper.getResult(

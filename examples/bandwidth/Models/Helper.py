@@ -23,7 +23,6 @@ class Helper():
     return valid
       
   def get_bandwidth(self, Graph, nodelist):
-    Graph = nx.Graph(Graph)
     if not Graph.edges:
         return 0
     if nodelist.all() != None:
@@ -31,6 +30,7 @@ class Helper():
     else:
         L = nx.laplacian_matrix(Graph)
     x, y = np.nonzero(L)
+    L = None
     return (x-y).max()
 
   def getGraph(self, upperTriangleAdjMatrix):

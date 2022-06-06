@@ -7,6 +7,7 @@ from ModelInterface import ModelInterface
 from Helper import Helper
 import argparse
 import numpy as np
+import networkx as nx
 import time
 from tensorflow.keras.models import load_model
 
@@ -123,7 +124,14 @@ class AdjMatrixCNN(ModelInterface):
         validation_data=(x_test, y_test),
         epochs=self.epochs,
         batch_size=self.batch_size,
+        verbose=2
     )
+
+    x_train = None
+    y_train = None
+    x_test = None
+    y_test = None
+    # helps garbage colleciton
 
     if not os.path.exists('plotted_figures'):
       os.makedirs('plotted_figures')
@@ -162,7 +170,7 @@ class AdjMatrixCNN(ModelInterface):
       helper = CNNHelper(self.NUMBER_NODES)
       x_test, y_test = helper.get_image_dataset(x_test, y_test)
 
-      pred = model.predict(x_test)
+      pred = model.predict(x_test, verbose=2)
 
       sumTest_original = []
       sumTest_pred = []
@@ -184,6 +192,7 @@ class AdjMatrixCNN(ModelInterface):
           output = helper.get_valid_pred(output)
 
           graph = helper.get_matrix_from_image(x_test[i])
+          graph = nx.Graph(graph)
           
           original_band = helper.get_bandwidth(graph, np.array(None))
           sumTest_original.append(original_band)
@@ -197,6 +206,9 @@ class AdjMatrixCNN(ModelInterface):
 
       test_length = pred.shape[0]
       print(test_length)
+      x_test = None
+      y_test = None
+      pred = None
 
       AdjMatrixCNNResult = helper.getResult(
         model_name='AdjMatrixCNN',

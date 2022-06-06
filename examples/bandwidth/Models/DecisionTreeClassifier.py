@@ -8,6 +8,7 @@ import argparse
 from joblib import dump, load
 from sklearn import tree
 import time
+import networkx as nx
 
 class DecisionTreeClassifier(ModelInterface):
   def __init__(self, NUMBER_NODES):
@@ -54,6 +55,8 @@ class DecisionTreeClassifier(ModelInterface):
           output = helper.get_valid_pred(output)
 
           graph = helper.getGraph(x_test[i])
+          graph = nx.Graph(graph)
+
           original_band = helper.get_bandwidth(graph, np.array(None))
           sumTest_original.append(original_band)
 

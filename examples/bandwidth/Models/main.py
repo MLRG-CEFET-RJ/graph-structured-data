@@ -7,6 +7,7 @@ from CatBoostRegressor import CatBoostRegressor
 from AdjMatrixCNN import AdjMatrixCNN
 from DecisionTreeClassifier import DecisionTreeClassifier
 from PointerNetwork import PointerNetwork
+from ReverseCuthillMckee import ReverseCuthillMckee
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Pytorch - Train and Fit models')
@@ -42,6 +43,7 @@ if __name__ == '__main__':
   decisionTreeClassifier = DecisionTreeClassifier(NUMBER_NODES=NUMBER_NODES)
   catBoostRegressor = CatBoostRegressor(NUMBER_NODES=NUMBER_NODES)
   pointerNetwork = PointerNetwork(NUMBER_NODES=NUMBER_NODES, batch_size=batch_pnet, epochs=epochs_pnet)
+  reverseCuthillMckee = ReverseCuthillMckee(NUMBER_NODES=NUMBER_NODES)
   
   if args.mode == '0':
     pytorchNeuralNetwork.fit()
@@ -56,13 +58,15 @@ if __name__ == '__main__':
     decisionTreeClassifier_result = decisionTreeClassifier.predict()
     catBoostRegressor_result = catBoostRegressor.predict()
     pointerNetwork_result = pointerNetwork.predict()
-    
+    reverseCuthillMckee_result = reverseCuthillMckee.predict()
+
     result = pd.concat((
       pytorchNeuralNetwork_result,
       adjMatrixCNN_result,
       decisionTreeClassifier_result,
       catBoostRegressor_result,
-      pointerNetwork_result
+      pointerNetwork_result,
+      reverseCuthillMckee_result
     ))
     
     print(result.to_latex())

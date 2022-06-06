@@ -6,6 +6,7 @@ import argparse
 import catboost
 import time
 import os
+import networkx as nx
 
 class CatBoostRegressor(ModelInterface):
   def __init__(self, NUMBER_NODES):
@@ -56,6 +57,8 @@ class CatBoostRegressor(ModelInterface):
           output = helper.get_valid_pred(output)
 
           graph = helper.getGraph(x_test[i])
+          graph = nx.Graph(graph)
+
           original_band = helper.get_bandwidth(graph, np.array(None))
           sumTest_original.append(original_band)
 
