@@ -28,6 +28,7 @@ examples/bandwidth/opt_results/*
 examples/bandwidth/PointerNetworks/*
 !examples/bandwidth/PointerNetworks/higgsfield_ckpt
 examples/bandwidth/NMT/
+examples/bandwidth/out/
 
 # DTrees
 examples/bandwidth/DTrees/catboost_info

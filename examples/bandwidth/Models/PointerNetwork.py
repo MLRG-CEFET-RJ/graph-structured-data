@@ -44,9 +44,6 @@ class PointerNetHelper(Helper):
         min_idx = min_idx[0]
         pred[min_idx] = 100
         valid[min_idx] = i
-    valid = None
-    labels = None
-    pred = None
     return valid
 
   def list_of_tuple_of_logits_with_true_to_sequences(self, pred):
@@ -420,9 +417,9 @@ class PointerNetwork(ModelInterface):
     model.eval()
     # it doesn't need to calculate gradients
     with torch.no_grad():
-        for x, y in test_dataloader:
-            logits_with_target_of_a_sequence, loss_output = model(x, y)
-            preds.append((x, logits_with_target_of_a_sequence))
+      for x, y in test_dataloader:
+        logits_with_target_of_a_sequence, loss_output = model(x, y)
+        preds.append((x, logits_with_target_of_a_sequence))
     return preds
 
   def fit(self):
@@ -473,14 +470,20 @@ class PointerNetwork(ModelInterface):
       val_loss.append(epoch_val_loss)
       print(f'Epoch {epoch + 1}, train_loss: {epoch_train_loss}, val_loss: {epoch_val_loss}')
 
-      valid_loss = np.average(epoch_val_loss)
-      early_stopping(valid_loss, model)
-      if early_stopping.early_stop:
-          print("Early stopping")
-          break
+      # valid_loss = np.average(epoch_val_loss)
+      # early_stopping(valid_loss, model)
+      # if early_stopping.early_stop:
+      #     print("Early stopping")
+      #     break
 
     train_dataloader = None
     test_dataloader = None
+
+    if not os.path.exists('saved_models'):
+      os.makedirs('saved_models')
+
+    path = os.path.join('saved_models', f'PointerNetwork_{self.NUMBER_NODES}_vertices.pt')
+    torch.save(model.state_dict(), path)
 
     if not os.path.exists('plotted_figures'):
       os.makedirs('plotted_figures')
@@ -564,7 +567,7 @@ class PointerNetwork(ModelInterface):
       print(test_length)
 
       PointerNetworkResult = helper.getResult(
-        model_name='PytorchNeuralNetwork',
+        model_name='PointerNetwork',
         sumTest_original=sumTest_original,
         sumTest_pred=sumTest_pred,
         sumTest_true=sumTest_true,
