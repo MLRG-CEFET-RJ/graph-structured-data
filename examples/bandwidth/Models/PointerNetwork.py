@@ -532,10 +532,11 @@ class PointerNetwork(ModelInterface):
       start_time = time.time()
       for input_data, prediction in preds:
         pred, target, q, c = helper.list_of_tuple_of_logits_with_true_to_sequences(prediction)
-        for x, output, true in zip(input_data, pred, target):
 
-          count += q
-          cases_with_repetition += c
+        count += q
+        cases_with_repetition += c
+
+        for x, output, true in zip(input_data, pred, target):
 
           output = helper.get_valid_pred(output)
 
