@@ -46,7 +46,7 @@ class PointerNetHelper(Helper):
         valid[min_idx] = i
     return valid
 
-  def list_of_tuple_of_logits_with_true_to_sequences(self, pred):
+  def logits_to_valid_sequences(self, pred):
     logits_sequences = {}
     true_sequences = {}
 
@@ -519,46 +519,50 @@ class PointerNetwork(ModelInterface):
 
       test_dataloader = DeviceDataLoader(test_dataloader, self.device)
 
-      preds = self.get_predicts(test_dataloader, model)
-      test_dataloader = None
+      # preds = self.get_predicts(test_dataloader, model)
 
       sumTest_original = []
       sumTest_pred = []
       sumTest_true = []
+      prediction_times = []
 
       count = 0
       cases_with_repetition = 0
 
-      start_time = time.time()
-      for input_data, prediction in preds:
-        pred, target, q, c = helper.list_of_tuple_of_logits_with_true_to_sequences(prediction)
+      model.eval()
+      with torch.no_grad():
+        for input_data, target_data in test_dataloader:
+          start_time = time.time()
 
-        count += q
-        cases_with_repetition += c
+          prediction, _ = model(input_data, target_data)
 
-        for x, output, true in zip(input_data, pred, target):
+          pred, target, q, c = helper.logits_to_valid_sequences(prediction)
+          count += q
+          cases_with_repetition += c
 
-          output = helper.get_valid_pred(output)
+          prediction_times.append(time.time() - start_time)
 
-          graph = helper.getGraph(x)
-          graph = nx.Graph(graph)
+          for x, output, true in zip(input_data, pred, target):
+            output = helper.get_valid_pred(output)
 
-          original_band = helper.get_bandwidth(graph, np.array(None))
-          sumTest_original.append(original_band)
+            graph = helper.getGraph(x)
+            graph = nx.Graph(graph)
 
-          pred_band = helper.get_bandwidth(graph, np.array(output))
-          sumTest_pred.append(pred_band)
+            original_band = helper.get_bandwidth(graph, np.array(None))
+            sumTest_original.append(original_band)
 
-          true = torch.tensor(true).cpu()
+            pred_band = helper.get_bandwidth(graph, np.array(output))
+            sumTest_pred.append(pred_band)
 
-          true_band = helper.get_bandwidth(graph, np.array(true))
-          sumTest_true.append(true_band)
-      end_time = time.time()
+            true = torch.tensor(true).cpu()
+
+            true_band = helper.get_bandwidth(graph, np.array(true))
+            sumTest_true.append(true_band)
 
       test_length = 0
-      for i in preds:
-        test_length += i[0].shape[0]
-      preds = None
+      for x, y in test_dataloader:
+        test_length += x.shape[0]      
+      test_dataloader = None
       print(test_length)
 
       PointerNetworkResult = helper.getResult(
@@ -568,7 +572,7 @@ class PointerNetwork(ModelInterface):
         sumTest_true=sumTest_true,
         count=count,
         cases_with_repetition=cases_with_repetition,
-        mean_time=(end_time - start_time) / test_length
+        prediction_times=prediction_times
       )
       
       return PointerNetworkResult

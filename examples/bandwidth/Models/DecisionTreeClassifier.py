@@ -31,43 +31,45 @@ class DecisionTreeClassifier(ModelInterface):
 
       x_test, y_test = super().load_test_data(datatype='int32', NUMBER_NODES=self.NUMBER_NODES)
 
-      pred = model.predict(x_test)
-
       sumTest_original = []
       sumTest_pred = []
       sumTest_true = []
+      prediction_times = []
 
       count = 0
       cases_with_repetition = 0
 
       helper = Helper(self.NUMBER_NODES)
 
-      start_time = time.time()
-      for i in range(len(pred)):
-          output = pred[i]
+      test_length = x_test.shape[0]
 
-          quantity_repeated = helper.count_repeats(np.round(output))
+      for i in range(test_length):
+        start_time = time.time()
 
-          if quantity_repeated != 0:
-              cases_with_repetition += 1
-          count += quantity_repeated
+        output, = model.predict(np.array([x_test[i]]))
 
-          output = helper.get_valid_pred(output)
+        quantity_repeated = helper.count_repeats(np.round(output))
 
-          graph = helper.getGraph(x_test[i])
-          graph = nx.Graph(graph)
+        if quantity_repeated != 0:
+            cases_with_repetition += 1
+        count += quantity_repeated
 
-          original_band = helper.get_bandwidth(graph, np.array(None))
-          sumTest_original.append(original_band)
+        output = helper.get_valid_pred(output)
 
-          pred_band = helper.get_bandwidth(graph, output)
-          sumTest_pred.append(pred_band)
+        prediction_times.append(time.time() - start_time)
 
-          true_band = helper.get_bandwidth(graph, y_test[i])
-          sumTest_true.append(true_band)
-      end_time = time.time()
+        graph = helper.getGraph(x_test[i])
+        graph = nx.Graph(graph)
 
-      test_length = pred.shape[0]
+        original_band = helper.get_bandwidth(graph, np.array(None))
+        sumTest_original.append(original_band)
+
+        pred_band = helper.get_bandwidth(graph, output)
+        sumTest_pred.append(pred_band)
+
+        true_band = helper.get_bandwidth(graph, y_test[i])
+        sumTest_true.append(true_band)
+
       print(test_length)
 
       DecisionTreeClassifierResult = helper.getResult(
@@ -77,7 +79,7 @@ class DecisionTreeClassifier(ModelInterface):
         sumTest_true=sumTest_true,
         count=count,
         cases_with_repetition=cases_with_repetition,
-        mean_time=(end_time - start_time) / test_length
+        prediction_times=prediction_times
       )
       return DecisionTreeClassifierResult
     except FileNotFoundError as e:

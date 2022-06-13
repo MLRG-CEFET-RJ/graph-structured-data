@@ -21,6 +21,28 @@ class Helper():
         pred[min_idx] = 100
         valid[min_idx] = i
     return valid
+
+  def get_valid_preds(self, batch_output):
+    quantity_repeated = 0
+    cases_repeated = 0
+    for i, output in enumerate(batch_output):
+      batch_output[i] = self.get_valid_pred(output)
+      repeated = self.count_repeats(output)
+      if repeated != 0:
+        cases_repeated += 1
+      quantity_repeated += repeated
+    return batch_output, quantity_repeated, cases_repeated
+
+
+    valid = np.ones(self.NUMBER_NODES)
+    labels = np.arange(0, self.NUMBER_NODES)
+    for i in labels:
+        min_value = np.amin(pred)
+        min_idx, = np.where(pred == min_value)
+        min_idx = min_idx[0]
+        pred[min_idx] = 100
+        valid[min_idx] = i
+    return valid
       
   def get_bandwidth(self, Graph, nodelist):
     if not Graph.edges:
@@ -50,12 +72,12 @@ class Helper():
   def getResult(self, model_name, **kwargs):
     result = np.array([
         [
-          f'{np.mean(kwargs["sumTest_original"]):.2f}±{np.std(kwargs["sumTest_original"]):.2f}',
-          f'{np.mean(kwargs["sumTest_pred"]):.2f}±{np.std(kwargs["sumTest_pred"]):.2f}',
-          f'{np.mean(kwargs["sumTest_true"]):.2f}±{np.std(kwargs["sumTest_true"]):.2f}',
+          f'{np.mean(kwargs["sumTest_original"]):.2f}±{np.std(kwargs["sumTest_original"], ddof=1):.2f}',
+          f'{np.mean(kwargs["sumTest_pred"]):.2f}±{np.std(kwargs["sumTest_pred"], ddof=1):.2f}',
+          f'{np.mean(kwargs["sumTest_true"]):.2f}±{np.std(kwargs["sumTest_true"], ddof=1):.2f}',
           f'{kwargs["count"]}',
           f'{kwargs["cases_with_repetition"]}',
-          f'{kwargs["mean_time"]:.4f}'
+          f'{np.mean(kwargs["prediction_times"]):.4f}±{np.std(kwargs["prediction_times"], ddof=1):.4f}'
         ]
       ])
 

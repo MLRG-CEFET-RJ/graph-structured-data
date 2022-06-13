@@ -170,45 +170,49 @@ class AdjMatrixCNN(ModelInterface):
       helper = CNNHelper(self.NUMBER_NODES)
       x_test, y_test = helper.get_image_dataset(x_test, y_test)
 
-      pred = model.predict(x_test, verbose=2)
+      x_dataset = tf.data.Dataset.from_tensor_slices(x_test)
+      x_dataset = x_dataset.batch(32)
+
+      y_dataset = tf.data.Dataset.from_tensor_slices(y_test)
+      y_dataset = y_dataset.batch(32)
 
       sumTest_original = []
       sumTest_pred = []
       sumTest_true = []
+      prediction_times = []
 
       count = 0
       cases_with_repetition = 0
 
-      start_time = time.time()
-      for i in range(len(pred)):
-          output = pred[i]
+      test_length = x_test.shape[0]
+      print(test_length)
 
-          quantity_repeated = helper.count_repeats(np.round(output))
+      for x_batch, y_batch in zip(x_dataset, y_dataset):
+        start_time = time.time()
 
-          if quantity_repeated != 0:
-              cases_with_repetition += 1
-          count += quantity_repeated
+        output_batch = model.predict(x_batch, verbose=2)
 
-          output = helper.get_valid_pred(output)
+        output_batch, quantity_repeated, cases_repeated = helper.get_valid_preds(output_batch)
+        count += quantity_repeated
+        cases_with_repetition += cases_repeated
 
-          graph = helper.get_matrix_from_image(x_test[i])
+        prediction_times.append(time.time() - start_time)
+
+        for features, pred, target in zip(x_batch, output_batch, y_batch):
+          graph = helper.get_matrix_from_image(features.numpy())
           graph = nx.Graph(graph)
           
           original_band = helper.get_bandwidth(graph, np.array(None))
           sumTest_original.append(original_band)
 
-          pred_band = helper.get_bandwidth(graph, output)
+          pred_band = helper.get_bandwidth(graph, pred)
           sumTest_pred.append(pred_band)
 
-          true_band = helper.get_bandwidth(graph, y_test[i])
+          true_band = helper.get_bandwidth(graph, target.numpy())
           sumTest_true.append(true_band)
-      end_time = time.time()
 
-      test_length = pred.shape[0]
-      print(test_length)
       x_test = None
       y_test = None
-      pred = None
 
       AdjMatrixCNNResult = helper.getResult(
         model_name='AdjMatrixCNN',
@@ -217,7 +221,7 @@ class AdjMatrixCNN(ModelInterface):
         sumTest_true=sumTest_true,
         count=count,
         cases_with_repetition=cases_with_repetition,
-        mean_time=(end_time - start_time) / test_length
+        prediction_times=prediction_times
       )
       return AdjMatrixCNNResult
     except FileNotFoundError as e:

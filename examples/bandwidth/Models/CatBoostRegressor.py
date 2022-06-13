@@ -14,7 +14,7 @@ class CatBoostRegressor(ModelInterface):
 
   def fit(self):
     model = catboost.CatBoostRegressor(objective='MultiRMSE', verbose=100)
-
+    
     x_train, y_train = super().load_train_data(datatype='int32', NUMBER_NODES=self.NUMBER_NODES)
     x_test, y_test = super().load_test_data(datatype='int32', NUMBER_NODES=self.NUMBER_NODES)
 
@@ -38,38 +38,42 @@ class CatBoostRegressor(ModelInterface):
       sumTest_original = []
       sumTest_pred = []
       sumTest_true = []
+      prediction_times = []
 
       count = 0
       cases_with_repetition = 0
 
       helper = Helper(self.NUMBER_NODES)
 
-      start_time = time.time()
-      for i in range(len(pred)):
-          output = pred[i]
-
-          quantity_repeated = helper.count_repeats(np.round(output))
-
-          if quantity_repeated != 0:
-              cases_with_repetition += 1
-          count += quantity_repeated
-
-          output = helper.get_valid_pred(output)
-
-          graph = helper.getGraph(x_test[i])
-          graph = nx.Graph(graph)
-
-          original_band = helper.get_bandwidth(graph, np.array(None))
-          sumTest_original.append(original_band)
-
-          pred_band = helper.get_bandwidth(graph, output)
-          sumTest_pred.append(pred_band)
-
-          true_band = helper.get_bandwidth(graph, y_test[i])
-          sumTest_true.append(true_band)
-      end_time = time.time()
-
       test_length = pred.shape[0]
+
+      for i in range(test_length):
+        start_time = time.time()
+
+        output = model.predict(x_test[i])
+
+        quantity_repeated = helper.count_repeats(np.round(output))
+
+        if quantity_repeated != 0:
+            cases_with_repetition += 1
+        count += quantity_repeated
+
+        output = helper.get_valid_pred(output)
+
+        prediction_times.append(time.time() - start_time)
+
+        graph = helper.getGraph(x_test[i])
+        graph = nx.Graph(graph)
+
+        original_band = helper.get_bandwidth(graph, np.array(None))
+        sumTest_original.append(original_band)
+
+        pred_band = helper.get_bandwidth(graph, output)
+        sumTest_pred.append(pred_band)
+
+        true_band = helper.get_bandwidth(graph, y_test[i])
+        sumTest_true.append(true_band)
+
       print(test_length)
 
       CatBoostRegressorResult = helper.getResult(
@@ -79,7 +83,7 @@ class CatBoostRegressor(ModelInterface):
         sumTest_true=sumTest_true,
         count=count,
         cases_with_repetition=cases_with_repetition,
-        mean_time=(end_time - start_time) / test_length
+        prediction_times=prediction_times
       )
       return CatBoostRegressorResult
     except FileNotFoundError as e:

@@ -42,36 +42,36 @@ class ReverseCuthillMckee():
     sumTest_original = []
     sumTest_pred = []
     sumTest_true = []
+    prediction_times = []
 
     count = 0
     cases_with_repetition = 0
 
     helper = Helper(self.NUMBER_NODES)
 
-    start_time = time.time()
     for i in range(len(x_test)):
-        graph = helper.getGraph(x_test[i])
-        graph = nx.Graph(graph)
-        output = np.array(list(model(graph)))
+      start_time = time.time()
 
-        quantity_repeated = helper.count_repeats(np.round(output))
+      graph = helper.getGraph(x_test[i])
+      graph = nx.Graph(graph)
+      output = np.array(list(model(graph)))
 
-        if quantity_repeated != 0:
-            cases_with_repetition += 1
+      prediction_times.append(time.time() - start_time)
 
-        count += quantity_repeated
+      # quantity_repeated = helper.count_repeats(np.round(output))
+      # if quantity_repeated != 0:
+      #     cases_with_repetition += 1
+      # count += quantity_repeated
+      # output = helper.get_valid_pred(output)
 
-        output = helper.get_valid_pred(output)
+      original_band = helper.get_bandwidth(graph, np.array(None))
+      sumTest_original.append(original_band)
 
-        original_band = helper.get_bandwidth(graph, np.array(None))
-        sumTest_original.append(original_band)
+      pred_band = helper.get_bandwidth(graph, output)
+      sumTest_pred.append(pred_band)
 
-        pred_band = helper.get_bandwidth(graph, output)
-        sumTest_pred.append(pred_band)
-
-        true_band = helper.get_bandwidth(graph, y_test[i])
-        sumTest_true.append(true_band)
-    end_time = time.time()
+      true_band = helper.get_bandwidth(graph, y_test[i])
+      sumTest_true.append(true_band)
 
     test_length = x_test.shape[0]
     print(test_length)
@@ -83,7 +83,7 @@ class ReverseCuthillMckee():
       sumTest_true=sumTest_true,
       count=count,
       cases_with_repetition=cases_with_repetition,
-      mean_time=(end_time - start_time) / test_length
+      prediction_times=prediction_times
     )
     return ReverseCuthillMckeeResult
 

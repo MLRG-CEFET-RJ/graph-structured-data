@@ -261,43 +261,43 @@ class PytorchNeuralNetwork(ModelInterface):
       sumTest_original = []
       sumTest_pred = []
       sumTest_true = []
+      prediction_times = []
 
       count = 0
       cases_with_repetition = 0
 
-      start_time = time.time()
-      for x, y in test_dataloader:
-        output = model(x)
+      model.eval()
+      with torch.no_grad():
+        for x, y in test_dataloader:
+          start_time = time.time()
 
-        x = x.cpu()
-        output = output.cpu()
-        y = y.cpu()
+          output = model(x)
 
-        for features, pred, target in zip(x, output, y):
-          features = features.detach().numpy()
-          pred = pred.detach().numpy()
-          target = target.cpu().numpy()
+          x = x.cpu()
+          output = output.cpu()
+          y = y.cpu()
 
-          quantity_repeated = helper.count_repeats(pred)
-
-          if quantity_repeated != 0:
-            cases_with_repetition += 1
+          output, quantity_repeated, cases_repeated = helper.get_valid_preds(output.numpy())
           count += quantity_repeated
+          cases_with_repetition += cases_repeated
 
-          pred = helper.get_valid_pred(pred)
+          prediction_times.append(time.time() - start_time)
 
-          graph = helper.getGraph(features)
-          graph = nx.Graph(graph)
+          for features, pred, target in zip(x, output, y):
+            features = features.numpy()
+            target = target.numpy()
 
-          original_band = helper.get_bandwidth(graph, np.array(None))
-          sumTest_original.append(original_band)
+            graph = helper.getGraph(features)
+            graph = nx.Graph(graph)
 
-          pred_band = helper.get_bandwidth(graph, pred)
-          sumTest_pred.append(pred_band)
+            original_band = helper.get_bandwidth(graph, np.array(None))
+            sumTest_original.append(original_band)
 
-          true_band = helper.get_bandwidth(graph, target)
-          sumTest_true.append(true_band)
-      end_time = time.time()
+            pred_band = helper.get_bandwidth(graph, pred)
+            sumTest_pred.append(pred_band)
+
+            true_band = helper.get_bandwidth(graph, target)
+            sumTest_true.append(true_band)
 
       test_length = 0
       for x, y in test_dataloader:
@@ -312,7 +312,7 @@ class PytorchNeuralNetwork(ModelInterface):
         sumTest_true=sumTest_true,
         count=count,
         cases_with_repetition=cases_with_repetition,
-        mean_time=(end_time - start_time) / test_length
+        prediction_times=prediction_times
       )
       
       return PytorchNeuralNetworkResult
