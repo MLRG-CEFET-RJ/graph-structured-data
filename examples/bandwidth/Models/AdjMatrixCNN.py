@@ -171,10 +171,10 @@ class AdjMatrixCNN(ModelInterface):
       x_test, y_test = helper.get_image_dataset(x_test, y_test)
 
       x_dataset = tf.data.Dataset.from_tensor_slices(x_test)
-      x_dataset = x_dataset.batch(32)
+      x_dataset = x_dataset.batch(self.batch_size)
 
       y_dataset = tf.data.Dataset.from_tensor_slices(y_test)
-      y_dataset = y_dataset.batch(32)
+      y_dataset = y_dataset.batch(self.batch_size)
 
       sumTest_original = []
       sumTest_pred = []
