@@ -61,13 +61,6 @@ class Helper():
     return dense_adj
     
   def getResult(self, model_name, **kwargs):
-    if f'{np.std(kwargs["prediction_times"], ddof=1):.4f}' == 'nan':
-      print("FELIPE CURCIO")
-      print(f'{np.std(kwargs["prediction_times"], ddof=1):.4f}')
-      print(np.std(kwargs["prediction_times"], ddof=1))
-      print(kwargs["prediction_times"])
-
-
     result = np.array([
         [
           f'{np.mean(kwargs["sumTest_original"]):.2f}±{np.std(kwargs["sumTest_original"], ddof=1):.2f}',
