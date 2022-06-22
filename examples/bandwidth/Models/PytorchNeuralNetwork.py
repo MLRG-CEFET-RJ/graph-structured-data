@@ -276,14 +276,16 @@ class PytorchNeuralNetwork(ModelInterface):
 
             preds = model(features.unsqueeze(dim=0))
 
+            preds = preds.cpu()
+
             preds, quantity_repeated, cases_repeated = helper.get_valid_preds(preds.numpy())
             count += quantity_repeated
             cases_with_repetition += cases_repeated
 
             prediction_times.append(time.time() - start_time)
 
-            features = features.numpy()
-            target = target.numpy()
+            features = features.cpu().numpy()
+            target = target.cpu().numpy()
 
             graph = helper.getGraph(features)
             graph = nx.Graph(graph)
