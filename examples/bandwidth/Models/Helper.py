@@ -26,24 +26,15 @@ class Helper():
     quantity_repeated = 0
     cases_repeated = 0
     for i, output in enumerate(batch_output):
-      batch_output[i] = self.get_valid_pred(output)
       repeated = self.count_repeats(output)
+      
+      batch_output[i] = self.get_valid_pred(output)
+      
       if repeated != 0:
         cases_repeated += 1
       quantity_repeated += repeated
     return batch_output, quantity_repeated, cases_repeated
 
-
-    valid = np.ones(self.NUMBER_NODES)
-    labels = np.arange(0, self.NUMBER_NODES)
-    for i in labels:
-        min_value = np.amin(pred)
-        min_idx, = np.where(pred == min_value)
-        min_idx = min_idx[0]
-        pred[min_idx] = 100
-        valid[min_idx] = i
-    return valid
-      
   def get_bandwidth(self, Graph, nodelist):
     if not Graph.edges:
         return 0
@@ -70,6 +61,13 @@ class Helper():
     return dense_adj
     
   def getResult(self, model_name, **kwargs):
+    if f'{np.std(kwargs["prediction_times"], ddof=1):.4f}' == 'nan':
+      print("FELIPE CURCIO")
+      print(f'{np.std(kwargs["prediction_times"], ddof=1):.4f}')
+      print(np.std(kwargs["prediction_times"], ddof=1))
+      print(kwargs["prediction_times"])
+
+
     result = np.array([
         [
           f'{np.mean(kwargs["sumTest_original"]):.2f}±{np.std(kwargs["sumTest_original"], ddof=1):.2f}',

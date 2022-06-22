@@ -188,24 +188,24 @@ class AdjMatrixCNN(ModelInterface):
       print(test_length)
 
       for x_batch, y_batch in zip(x_dataset, y_dataset):
-        start_time = time.time()
+        for features, target in zip(x_batch, y_batch):
+          start_time = time.time()
 
-        output_batch = model.predict(x_batch, verbose=2)
+          preds = model.predict(np.array([features]), verbose=2)
 
-        output_batch, quantity_repeated, cases_repeated = helper.get_valid_preds(output_batch)
-        count += quantity_repeated
-        cases_with_repetition += cases_repeated
+          preds, quantity_repeated, cases_repeated = helper.get_valid_preds(preds)
+          count += quantity_repeated
+          cases_with_repetition += cases_repeated
 
-        prediction_times.append(time.time() - start_time)
+          prediction_times.append(time.time() - start_time)
 
-        for features, pred, target in zip(x_batch, output_batch, y_batch):
           graph = helper.get_matrix_from_image(features.numpy())
           graph = nx.Graph(graph)
           
           original_band = helper.get_bandwidth(graph, np.array(None))
           sumTest_original.append(original_band)
 
-          pred_band = helper.get_bandwidth(graph, pred)
+          pred_band = helper.get_bandwidth(graph, preds[0])
           sumTest_pred.append(pred_band)
 
           true_band = helper.get_bandwidth(graph, target.numpy())

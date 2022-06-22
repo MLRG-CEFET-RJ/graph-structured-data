@@ -269,21 +269,19 @@ class PytorchNeuralNetwork(ModelInterface):
       model.eval()
       with torch.no_grad():
         for x, y in test_dataloader:
-          start_time = time.time()
+          # x = x.cpu()
+          # y = y.cpu()
+          for features, target in zip(x, y):
+            start_time = time.time()
 
-          output = model(x)
+            preds = model(features.unsqueeze(dim=0))
 
-          x = x.cpu()
-          output = output.cpu()
-          y = y.cpu()
+            preds, quantity_repeated, cases_repeated = helper.get_valid_preds(preds.numpy())
+            count += quantity_repeated
+            cases_with_repetition += cases_repeated
 
-          output, quantity_repeated, cases_repeated = helper.get_valid_preds(output.numpy())
-          count += quantity_repeated
-          cases_with_repetition += cases_repeated
+            prediction_times.append(time.time() - start_time)
 
-          prediction_times.append(time.time() - start_time)
-
-          for features, pred, target in zip(x, output, y):
             features = features.numpy()
             target = target.numpy()
 
@@ -293,7 +291,7 @@ class PytorchNeuralNetwork(ModelInterface):
             original_band = helper.get_bandwidth(graph, np.array(None))
             sumTest_original.append(original_band)
 
-            pred_band = helper.get_bandwidth(graph, pred)
+            pred_band = helper.get_bandwidth(graph, preds[0])
             sumTest_pred.append(pred_band)
 
             true_band = helper.get_bandwidth(graph, target)

@@ -532,18 +532,18 @@ class PointerNetwork(ModelInterface):
       model.eval()
       with torch.no_grad():
         for input_data, target_data in test_dataloader:
-          start_time = time.time()
+          for x, y in zip(input_data, target_data):
+            start_time = time.time()
 
-          prediction, _ = model(input_data, target_data)
+            prediction, _ = model(x.unsqueeze(dim=0), y.unsqueeze(dim=0))
 
-          pred, target, q, c = helper.logits_to_valid_sequences(prediction)
-          count += q
-          cases_with_repetition += c
+            preds, targets, q, c = helper.logits_to_valid_sequences(prediction)
+            count += q
+            cases_with_repetition += c
 
-          prediction_times.append(time.time() - start_time)
+            prediction_times.append(time.time() - start_time)
 
-          for x, output, true in zip(input_data, pred, target):
-            output = helper.get_valid_pred(output)
+            pred = helper.get_valid_pred(preds[0])
 
             graph = helper.getGraph(x)
             graph = nx.Graph(graph)
@@ -551,12 +551,12 @@ class PointerNetwork(ModelInterface):
             original_band = helper.get_bandwidth(graph, np.array(None))
             sumTest_original.append(original_band)
 
-            pred_band = helper.get_bandwidth(graph, np.array(output))
+            pred_band = helper.get_bandwidth(graph, np.array(pred))
             sumTest_pred.append(pred_band)
 
-            true = torch.tensor(true).cpu()
+            targets = torch.tensor(targets).cpu()
 
-            true_band = helper.get_bandwidth(graph, np.array(true))
+            true_band = helper.get_bandwidth(graph, np.array(targets[0]))
             sumTest_true.append(true_band)
 
       test_length = 0
