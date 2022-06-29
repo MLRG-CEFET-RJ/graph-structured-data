@@ -1,12 +1,14 @@
 import argparse
 
 import pandas as pd
+from GradientBoostingClassifier import GradientBoostingClassifier
 
 from PytorchNeuralNetwork import PytorchNeuralNetwork
 from CatBoostRegressor import CatBoostRegressor
 from AdjMatrixCNN import AdjMatrixCNN
 from DecisionTreeClassifier import DecisionTreeClassifier
 from PointerNetwork import PointerNetwork
+from RandomForestClassifier import RandomForestClassifier
 from ReverseCuthillMckee import ReverseCuthillMckee
 
 if __name__ == '__main__':
@@ -41,6 +43,8 @@ if __name__ == '__main__':
   pytorchNeuralNetwork = PytorchNeuralNetwork(NUMBER_NODES=NUMBER_NODES, batch_size=batch_nn, epochs=epochs_nn)
   adjMatrixCNN = AdjMatrixCNN(NUMBER_NODES=NUMBER_NODES, batch_size=batch_cnn, epochs=epochs_cnn)
   decisionTreeClassifier = DecisionTreeClassifier(NUMBER_NODES=NUMBER_NODES)
+  randomForestClassifier = RandomForestClassifier(NUMBER_NODES=NUMBER_NODES)
+  gradientBoostingClassifier = GradientBoostingClassifier(NUMBER_NODES=NUMBER_NODES)
   catBoostRegressor = CatBoostRegressor(NUMBER_NODES=NUMBER_NODES)
   pointerNetwork = PointerNetwork(NUMBER_NODES=NUMBER_NODES, batch_size=batch_pnet, epochs=epochs_pnet)
   reverseCuthillMckee = ReverseCuthillMckee(NUMBER_NODES=NUMBER_NODES)
@@ -49,6 +53,8 @@ if __name__ == '__main__':
     pytorchNeuralNetwork.fit()
     adjMatrixCNN.fit()
     decisionTreeClassifier.fit()
+    randomForestClassifier.fit()
+    gradientBoostingClassifier.fit()
     catBoostRegressor.fit()
     pointerNetwork.fit()
     
@@ -56,6 +62,8 @@ if __name__ == '__main__':
     pytorchNeuralNetwork_result = pytorchNeuralNetwork.predict()
     adjMatrixCNN_result = adjMatrixCNN.predict()
     decisionTreeClassifier_result = decisionTreeClassifier.predict()
+    randomForestClassifier_result = randomForestClassifier.predict()
+    gradientBoostingClassifier_result = gradientBoostingClassifier.predict()
     catBoostRegressor_result = catBoostRegressor.predict()
     pointerNetwork_result = pointerNetwork.predict()
     reverseCuthillMckee_result = reverseCuthillMckee.predict()
@@ -64,6 +72,8 @@ if __name__ == '__main__':
       pytorchNeuralNetwork_result,
       adjMatrixCNN_result,
       decisionTreeClassifier_result,
+      randomForestClassifier_result,
+      gradientBoostingClassifier_result,
       catBoostRegressor_result,
       pointerNetwork_result,
       reverseCuthillMckee_result
