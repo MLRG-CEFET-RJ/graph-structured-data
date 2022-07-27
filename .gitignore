@@ -38,6 +38,12 @@ examples/bandwidth/Models/catboost_info
 examples/bandwidth/Models/saved_models/
 examples/bandwidth/Models/plotted_figures/
 
+# ModelsUnified
+examples/bandwidth/ModelsUnified/catboost_info
+examples/bandwidth/ModelsUnified/saved_models/
+examples/bandwidth/ModelsUnified/plotted_figures/
+examples/bandwidth/ModelsUnified/Ufa.ipynb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
