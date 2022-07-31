@@ -561,6 +561,8 @@ class PointerNetwork(ModelInterface):
 
             prediction_times.append(time.time() - start_time)
 
+            x = x.cpu()
+
             graph = helper.getGraph(x)
             graph = nx.Graph(graph)
 
