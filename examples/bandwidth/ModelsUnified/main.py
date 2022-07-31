@@ -1,9 +1,7 @@
 import argparse
 
-import pandas as pd
-
 from PytorchNeuralNetwork import PytorchNeuralNetwork
-from examples.bandwidth.ModelsUnified.PointerNetwork import PointerNetwork
+from PointerNetwork import PointerNetwork
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Pytorch - Train and Fit models')

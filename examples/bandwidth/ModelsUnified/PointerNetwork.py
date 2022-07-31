@@ -46,8 +46,8 @@ class PointerNetHelper(Helper):
 
     for logits_batch, true_batch in pred:
       for batch_id, (logits, true) in enumerate(zip(logits_batch, true_batch)):
-        logits_sequences[batch_id].append(logits)
-        true_sequences[batch_id].append(true)
+        logits_sequences[batch_id].append(logits.cpu())
+        true_sequences[batch_id].append(true.cpu())
 
     seq_len = np.where(np.array(true_sequences[0]) == 35)[0]
     if not len(seq_len):
