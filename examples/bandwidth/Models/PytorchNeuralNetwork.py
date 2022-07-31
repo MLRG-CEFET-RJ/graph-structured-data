@@ -44,11 +44,13 @@ class NeuralNetwork(nn.Module):
   def __init__(self, NUMBER_NODES):
       super(NeuralNetwork, self).__init__()
       self.fc1 = nn.Linear(((NUMBER_NODES * NUMBER_NODES - NUMBER_NODES) // 2 ), 128)
-      self.fc2 = nn.Linear(128, NUMBER_NODES)
+      self.fc2 = nn.Linear(128, 128)
+      self.fc3 = nn.Linear(128, NUMBER_NODES)
 
   def forward(self, x):
       x = torch.relu(self.fc1(x))
-      x = self.fc2(x)
+      x = torch.relu(self.fc2(x))
+      x = self.fc3(x)
       return x
 
 class CustomLoss(torch.nn.Module):
