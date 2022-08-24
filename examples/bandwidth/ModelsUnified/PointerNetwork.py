@@ -309,6 +309,7 @@ class PointerNet(nn.Module):
         mask = torch.zeros(batch_size, seq_len).bool()
         if self.use_cuda:
             mask = mask.cuda()
+        """
         masks = (inputs == 2).nonzero()
         idxs = {}
         for (idx, seq_length) in masks:
@@ -318,6 +319,8 @@ class PointerNet(nn.Module):
         idxs = idxs.items()
         if not len(idxs):
           idxs = None
+        """
+        idxs = None
 
         decoder_input = self.decoder_start_input.unsqueeze(0).repeat(batch_size, 1)
         
@@ -339,6 +342,27 @@ class PointerNet(nn.Module):
             decoder_input = target_embedded[:,i,:]
 
             output.append((logits, target[ : , i]))
+
+            """
+            if idxs != None, apply_mask_to_logits will run, and put -np.inf on invalid logits.
+
+            the problem with that is when it is executed self.criterion(logits, target[:,i]),
+            target[:,i] on an invalid node will evaluate to 35 (the chosen mask), but the
+            probability of being 35 will be -np.inf, causing the loss to be infinity.
+
+            I thought that before calculating the loss I could split the logits to its
+            valid seq_len, it would cause logits[i] to have maximum seq_len as len(logits[i]).
+
+            But logits are applicable for a batch of graphs, imagining that logits[0] are logits
+            for a label of a 9 vertices graph and logits[1] are logits for a label of a 7 vertices
+            graph, we could not have logits with shape (batch_size, 7 or 9) at the same time.
+
+            that's why I set up idxs = None, in that way the PNet will treat all logits as valids
+            and try to approximate logits to the 35 label (the chosen mask). The logits of a 
+            prediction and target are treat in the logits_to_valid_sequences helper function.
+            Since it is handling just a a single graph, instead of a batch of graphs, it can
+            make the split in the logits and the target
+            """
 
             loss += self.criterion(logits, target[:,i])
             

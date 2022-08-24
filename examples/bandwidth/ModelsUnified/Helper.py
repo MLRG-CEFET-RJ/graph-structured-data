@@ -105,19 +105,19 @@ class Helper():
   def getResult(self, **kwargs):
     result = [
       [
-        np.mean(kwargs['original_bandwidths'][5]),
-        np.mean(kwargs['pred_bandwidths'][5]),
-        np.mean(kwargs['target_bandwidths'][5])
+        f'{np.mean(kwargs["original_bandwidths"][5])}±{np.std(kwargs["original_bandwidths"][5], ddof=1):.2f}',
+        f'{np.mean(kwargs["pred_bandwidths"][5])}±{np.std(kwargs["pred_bandwidths"][5], ddof=1):.2f}',
+        f'{np.mean(kwargs["target_bandwidths"][5])}±{np.std(kwargs["target_bandwidths"][5], ddof=1):.2f}',
       ],
       [
-        np.mean(kwargs['original_bandwidths'][7]),
-        np.mean(kwargs['pred_bandwidths'][7]),
-        np.mean(kwargs['target_bandwidths'][7]),
+        f'{np.mean(kwargs["original_bandwidths"][7])}±{np.std(kwargs["original_bandwidths"][7], ddof=1):.2f}',
+        f'{np.mean(kwargs["pred_bandwidths"][7])}±{np.std(kwargs["pred_bandwidths"][7], ddof=1):.2f}',
+        f'{np.mean(kwargs["target_bandwidths"][7])}±{np.std(kwargs["target_bandwidths"][7], ddof=1):.2f}',
       ],
       [
-        np.mean(kwargs['original_bandwidths'][9]),
-        np.mean(kwargs['pred_bandwidths'][9]),
-        np.mean(kwargs['target_bandwidths'][9]),
+        f'{np.mean(kwargs["original_bandwidths"][9])}±{np.std(kwargs["original_bandwidths"][9], ddof=1):.2f}',
+        f'{np.mean(kwargs["pred_bandwidths"][9])}±{np.std(kwargs["pred_bandwidths"][9], ddof=1):.2f}',
+        f'{np.mean(kwargs["target_bandwidths"][9])}±{np.std(kwargs["target_bandwidths"][9], ddof=1):.2f}',
       ]
     ]
 
@@ -135,7 +135,7 @@ class Helper():
       ]
     )
 
-    metadata = [kwargs['count'], kwargs["cases_with_repetition"], np.mean(kwargs["prediction_times"])]
+    metadata = [kwargs['count'], kwargs["cases_with_repetition"], f'{np.mean(kwargs["prediction_times"]):.4f}±{np.std(kwargs["prediction_times"], ddof=1):.4f}']
 
     df_metadata = pd.DataFrame(
       metadata,
