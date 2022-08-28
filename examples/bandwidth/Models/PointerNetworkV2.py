@@ -558,7 +558,7 @@ class PointerNetwork(ModelInterface):
         hidden_size=32,
         seq_len=self.features_length,
         n_glimpses=1,
-        tanh_exploration=self.features_length,
+        tanh_exploration=10,
         use_tanh=True,
         use_cuda=True if self.device == 'cuda' else False
       ).to(self.device)
