@@ -115,7 +115,7 @@ Tensorflow:
 conda install -c conda-forge tensorflow
 ```
 
-Networkx, pandas, numpy:
+Networkx, pandas and numpy:
 
 ```
 conda install -c anaconda networkx
@@ -123,8 +123,9 @@ conda install pandas
 conda install -c anaconda numpy
 ```
 
-scikit-learn:
+scikit-learn and catboost:
 
 ```
 conda install -c conda-forge scikit-learn
+conda install -c conda-forge catboost
 ```
