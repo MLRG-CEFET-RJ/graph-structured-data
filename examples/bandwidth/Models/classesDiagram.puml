@@ -52,6 +52,10 @@ class DecisionTreeClassifier implements ModelInterface {
   - number_nodes: int
 }
 
+class RandomForestClassifier implements ModelInterface {
+  - number_nodes: int
+}
+
 class CatBoostRegressor implements ModelInterface {
   - number_nodes: int
 }
@@ -88,6 +92,8 @@ class PointerNetwork implements ModelInterface {
 }
 
 DecisionTreeClassifier "1" -- "1" Helper
+
+RandomForestClassifier "1" -- "1" Helper
 
 CatBoostRegressor "1" -- "1" Helper
 
