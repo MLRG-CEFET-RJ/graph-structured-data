@@ -98,6 +98,10 @@ The following image shows the Models diagram:
 
 ### Packages and libraries required
 
+For Windows users, Ubuntu on Windows Subsystem for Linux (WSL) sets up a Ubuntu terminal environment.
+
+[Download link](https://ubuntu.com/wsl)
+
 First step is to set up a conda environment:
 
 Go to https://www.anaconda.com/products/distribution and download the linux distribution, once the file is download execute with `$ bash Anaconda3-2022.05-Linux-x86_64.sh`.
@@ -115,12 +119,13 @@ Tensorflow:
 conda install -c conda-forge tensorflow
 ```
 
-Networkx, pandas and numpy:
+Networkx, pandas, matplotlib and numpy:
 
 ```
 conda install -c anaconda networkx
 conda install pandas
 conda install -c anaconda numpy
+conda install -c conda-forge matplotlib
 ```
 
 scikit-learn and catboost:
